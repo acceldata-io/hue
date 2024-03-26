@@ -103,8 +103,6 @@ function redhat8_ppc_install() {
       xmlsec1-openssl \
       libss \
       ncurses-devel'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS 14 install
     sudo -- sh -c 'yum install -y nodejs npm'
     # Pip modules install
@@ -133,8 +131,6 @@ function redhat9_ppc_install() {
       xmlsec1-openssl \
       libss \
       ncurses-devel'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS 14 install
     sudo -- sh -c 'yum install -y nodejs npm'
     # Pip modules install
@@ -164,8 +160,8 @@ function sles12_install() {
       ncurses-devel \
       nmap \
       xmlsec1 xmlsec1-devel  xmlsec1-openssl-devel'
-    # MySQLdb install
-    sudo -- sh -c 'zypper install -y libmysqlclient-devel libmysqlclient18 libmysqld18 libmysqld-devel'
+    # MySQLdb install -- Removed MySQLdb
+    sudo -- sh -c 'zypper install -y libmysqld18 libmysqld-devel'
     # NODEJS 14 install
     sudo -- sh -c 'zypper install -y npm14 nodejs14'
     # Pip modules install
@@ -194,7 +190,7 @@ function sles15_install() {
       nmap \
       xmlsec1 xmlsec1-devel  xmlsec1-openssl-devel'
     # MySQLdb install
-    sudo -- sh -c 'zypper install -y libmariadb-devel mariadb-client python3-mysqlclient'
+    sudo -- sh -c 'zypper install -y libmariadb-devel mariadb-client 
     # NODEJS 14 install
     sudo -- sh -c 'zypper install -y nodejs18 npm16'
     # Pip modules install
@@ -263,8 +259,6 @@ function redhat8_install() {
       xmlsec1-openssl \
       libss \
       ncurses-c++-libs'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS 14 install
     sudo -- sh -c 'curl -sL https://rpm.nodesource.com/setup_14.x | bash - && yum install -y nodejs'
     # Pip modules install
@@ -384,8 +378,6 @@ function redhat9_install() {
       xmlsec1-openssl \
       libss \
       ncurses-c++-libs'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS 14 install
     sudo -- sh -c 'curl -sL https://rpm.nodesource.com/setup_14.x | bash - && yum install -y nodejs'
     # Pip modules install

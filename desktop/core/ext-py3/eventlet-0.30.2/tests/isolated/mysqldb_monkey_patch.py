@@ -1,6 +1,8 @@
 __test__ = False
 
 if __name__ == '__main__':
+    import pymysql
+    pymysql.install_as_MySQLdb()
     import MySQLdb as m
     from eventlet import patcher
     from eventlet.green import MySQLdb as gm

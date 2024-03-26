@@ -1,3 +1,6 @@
+import pymysql
+pymysql.install_as_MySQLdb()
+
 __MySQLdb = __import__('MySQLdb')
 
 __all__ = __MySQLdb.__all__
