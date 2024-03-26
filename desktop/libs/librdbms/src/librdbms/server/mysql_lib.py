@@ -19,6 +19,8 @@ import logging
 import sys
 
 try:
+  import pymysql
+  pymysql.install_as_MySQLdb()
   import MySQLdb as Database
 except ImportError as e:
   from django.core.exceptions import ImproperlyConfigured
