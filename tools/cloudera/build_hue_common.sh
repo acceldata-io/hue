@@ -117,8 +117,6 @@ function redhat8_ppc_install() {
       xmlsec1-openssl \
       libss \
       ncurses-devel'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS install
     sudo sh -c 'curl -fsSL https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-ppc64le.tar.gz -o node-v20.11.0-linux-ppc64le.tar.gz && \
       mkdir -p /usr/local/lib/nodejs && \
@@ -151,8 +149,6 @@ function redhat9_ppc_install() {
       xmlsec1-openssl \
       libss \
       ncurses-devel'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS install
     sudo sh -c 'curl -fsSL https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-ppc64le.tar.gz -o node-v20.11.0-linux-ppc64le.tar.gz && \
       mkdir -p /usr/local/lib/nodejs && \
@@ -186,8 +182,8 @@ function sles12_install() {
       ncurses-devel \
       nmap \
       xmlsec1 xmlsec1-devel  xmlsec1-openssl-devel'
-    # MySQLdb install
-    sudo -- sh -c 'zypper install -y libmysqlclient-devel libmysqlclient18 libmysqld18 libmysqld-devel'
+      # MySQLdb install -- Removed MySQLdb
+      sudo -- sh -c 'zypper install -y libmysqld18 libmysqld-devel'
     # NODEJS 16 install
     # Upgrading to node-v16 because of the following CVE's in node-v14 "CVE-2021-3450, CVE-2021-44531, CVE-2023-32004, CVE-2023-32006"
     # Node-v20-LTS is not supported by old OS'es - Redhat7_ppc, Centos7, Ubuntu18, Sles12. So upgrading to node-v16
@@ -218,7 +214,7 @@ function sles15_install() {
       nmap \
       xmlsec1 xmlsec1-devel  xmlsec1-openssl-devel'
     # MySQLdb install
-    sudo -- sh -c 'zypper install -y libmariadb-devel mariadb-client python3-mysqlclient'
+    sudo -- sh -c 'zypper install -y libmariadb-devel mariadb-client'
     # NODEJS 18 install
     sudo -- sh -c 'zypper install -y nodejs18 npm20'
     # Pip modules install
@@ -290,8 +286,6 @@ function redhat8_install() {
       xmlsec1-openssl \
       libss \
       ncurses-c++-libs'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS 20 install
     sudo -- sh -c 'curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash - && \
       yum install -y nodejs'
@@ -492,8 +486,6 @@ function redhat9_install() {
       xmlsec1-openssl \
       libss \
       ncurses-c++-libs'
-    # MySQLdb install
-    sudo -- sh -c 'yum install -y python3-mysqlclient'
     # NODEJS 20 install
     sudo -- sh -c 'curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash - && \
       yum install -y nodejs'
