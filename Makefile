@@ -140,6 +140,7 @@ $(BLD_DIR_ENV)/stamp:
 	  $(SYS_PYTHON) -m venv $(BLD_DIR_ENV); \
 	 fi
 	@virtualenv -p $(PYTHON_VER) $(BLD_DIR_ENV)
+	@$(ENV_PYTHON) -m pip install --upgrade pip==$(PIP_VERSION)
 	@echo "--- Virtual environment $(BLD_DIR_ENV) ready"
 	@touch $@
 	@echo '--- Installing PIP_MODULES in virtual-env'
