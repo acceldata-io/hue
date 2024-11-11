@@ -2,5 +2,5 @@ cryptography==42.0.8
 numpy==1.24.4
 pandas==2.0.3
 lxml==4.9.1
--r ${ROOT}/desktop/core/base_requirements.txt
+-r base_requirements.txt
 
