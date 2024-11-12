@@ -83,4 +83,4 @@ djangosaml2==0.18.0
 dnspython==1.16.0  # Required for eventlet==0.30.2 and python3.10
 eventlet==0.30.2
 pysaml2==7.3.1
-python-sasl==0.3.1
+pure-sasl==0.6.2
