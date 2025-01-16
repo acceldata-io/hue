@@ -85,7 +85,7 @@ export PATH=$(dirname $ENV_PYTHON):$PATH
 
 PYVER=$($ENV_PYTHON -V 2>&1 | awk '{print $2}' | cut -d '.' -f 1,2)
 # Step 1. Fix virtualenv
-if [[ "$PYVER" == "3."[8-9]* || "$PYVER" == "3.10" ]]; then
+if [[ "$PYVER" == "3."[8-9]* || "$PYVER" == "3.10" || "$PYVER" == "3.11" ]]; then
   echo "Python version is 3.8 or greater"
   pushd .
   cd $HUE_ROOT
