@@ -83,5 +83,5 @@ pure-sasl==0.6.2
 -e file://${ROOT}/desktop/core/ext-py3/django-axes-5.13.0
 -e file://${ROOT}/desktop/core/ext-py3/djangosaml2-0.18.0
 -e file://${ROOT}/desktop/core/ext-py3/pysaml2-7.3.1
--e file://${ROOT}/desktop/core/ext-py3/python-sasl-0.3.1
-#git+https://github.com/cbouss/python-sasl.git@ada03f9f68a01416eb5689674672bca8140e14a7
+#-e file://${ROOT}/desktop/core/ext-py3/python-sasl-0.3.1
+git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e
