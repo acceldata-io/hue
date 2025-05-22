@@ -23,7 +23,6 @@ class RequirementsGenerator:
             "django-axes-5.13.0",
             "django-babel",
             "pysaml2-7.3.1",
-            "python-sasl-0.3.1",
         ]
 
         self.requirements = [
@@ -73,6 +72,7 @@ class RequirementsGenerator:
             "protobuf==3.20.3",
             "pyarrow==17.0.0",
             "pyformance==0.3.2",
+            "pymysql==1.1.1",
             "python-dateutil==2.8.2",
             "python-daemon==2.2.4",
             "python-ldap==3.4.3",
@@ -95,10 +95,12 @@ class RequirementsGenerator:
             "trino==0.329.0",
             "git+https://github.com/gethue/thrift.git",
             "thrift-sasl==0.4.3",
+            "urllib3>=2.3.0",
             "django-utils-six==2.0",
             "six==1.16.0",
             "psutil==5.8.0",
             "drf-spectacular[sidecar]==0.27.2",
+
         ]
         self.ppc64le_requirements = {
             "default": [],
@@ -127,13 +129,14 @@ class RequirementsGenerator:
                 "lxml==4.9.1",
                 "sasl==0.3.1",
                 "Markdown==3.1",
+                "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
             "3.9": [
                 "pyopenssl==22.1.0",
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
-                "sasl==0.3.1",
+                "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
                 "Markdown==3.8",
                 "decorator==5.1.1",
             ],
@@ -154,15 +157,16 @@ class RequirementsGenerator:
                 "pandas==2.0.3",
                 "lxml==4.9.1",
                 "Markdown==3.1",
+                "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
             "3.9": [
                 "pyopenssl==22.1.0",
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
-                "sasl==0.3.1",
                 "Markdown==3.8",
                 "decorator==5.1.1",
+                "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
             "3.11": [
                 "cryptography==42.0.8",
@@ -178,6 +182,7 @@ class RequirementsGenerator:
             "ppc64le": self.ppc64le_requirements,
             "x86_64": self.x86_64_requirements,
             "aarch64": self.aarch64_requirements,
+            "arm64": self.aarch64_requirements,
         }
         self.arch = platform.machine()
         self.python_version_string = f"{sys.version_info.major}.{sys.version_info.minor}"
