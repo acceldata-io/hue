@@ -1,4 +1,4 @@
-Cloudera Hue 4.11.0
+Cloudera Hue 4.5.0
 Copyright 2020 Cloudera Inc.  All Rights Reserved.
 
 
