@@ -206,6 +206,8 @@ INSTALL_CORE_FILES = \
 	ext \
 	tools/app_reg \
 	$(INSTALL_DIR) \
+	tools/virtual-bootstrap \
+	tools/relocatable.py \
 	VERS* LICENSE* README*
 
 .PHONY: install
