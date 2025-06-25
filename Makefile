@@ -156,14 +156,21 @@ $(info "PPC64LE is $(PPC64LE)")
 virtual-env: $(BLD_DIR_ENV)/bin/python
 $(BLD_DIR_ENV)/bin/python:
 	@echo "--- Creating virtual environment for $(PYTHON_VER) ---"
-	@mkdir -p $(BLD_DIR_ENV)
-	@$(SYS_PYTHON) -m pip install --upgrade pip==$(PIP_VERSION)
-	@$(SYS_PYTHON) -m pip install virtualenv==$(VIRTUAL_ENV_VERSION) virtualenv-make-relocatable==$(VIRTUAL_ENV_RELOCATABLE_VERSION)
-	@$(SYS_PYTHON) -m virtualenv --copies -p $(PYTHON_VER) $(BLD_DIR_ENV)
+	@echo "SYS_PYTHON: $(SYS_PYTHON)"
+	@echo "PIP_VERSION: $(PIP_VERSION)"
+	@echo "VIRTUAL_ENV_VERSION: $(VIRTUAL_ENV_VERSION)"
+	@echo "VIRTUAL_ENV_RELOCATABLE_VERSION: $(VIRTUAL_ENV_RELOCATABLE_VERSION)"
+	@echo "Running: $(SYS_PYTHON) -m pip install --upgrade pip==$(PIP_VERSION) -vvv"
+	@$(SYS_PYTHON) -m pip install --upgrade pip==$(PIP_VERSION) -v || { echo "❌ Failed to upgrade pip"; exit 1; }
+	@$(SYS_PYTHON) -m pip install virtualenv==$(VIRTUAL_ENV_VERSION) virtualenv-make-relocatable==$(VIRTUAL_ENV_RELOCATABLE_VERSION) || { echo "❌ Failed to install virtualenv packages"; exit 1; }
+	@echo "Creating virtualenv at $(BLD_DIR_ENV)"
+	@$(SYS_PYTHON) -m virtualenv --copies -p $(PYTHON_VER) $(BLD_DIR_ENV) || { echo "❌ virtualenv creation failed"; exit 1; }
+	@echo "Installing virtualenv packages into the environment"
 	@$(ENV_PYTHON) -m pip install virtualenv==$(VIRTUAL_ENV_VERSION) virtualenv-make-relocatable==$(VIRTUAL_ENV_RELOCATABLE_VERSION)
 	@$(eval RELOCATABLE := $(shell which virtualenv-make-relocatable))
+	@echo "Found relocatable script at: $(RELOCATABLE)"
 	@echo "REQUIREMENT_FILE is $(REQUIREMENT_FILE)"
-	@$(ENV_PIP) install -r $(REQUIREMENT_FILE)
+	@$(ENV_PIP) install -r $(REQUIREMENT_FILE) || { echo "❌ Failed to install requirements"; exit 1; }
 	@echo "--- Virtual environment setup complete for $(PYTHON_VER) ---"
 	@$(ENV_PIP) install $(NAVOPTAPI_WHL)
 	@echo "--- Finished installing $(NAVOPTAPI_WHL) into virtual-env ---"
