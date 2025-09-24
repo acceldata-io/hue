@@ -18,8 +18,8 @@ from __future__ import absolute_import
 
 import gc
 import logging
-import threading
 import multiprocessing
+import threading
 from builtins import range
 from datetime import datetime, timedelta
 
@@ -33,6 +33,12 @@ from useradmin.models import User
 
 
 LOG = logging.getLogger()
+
+try:
+  from cx_Oracle import DatabaseError as OracleDatabaseError
+except ImportError:  # cx_Oracle is optional at runtime, never match when absent
+  class OracleDatabaseError(Exception):
+    pass
 
 ALLOWED_DJANGO_PROMETHEUS_METRICS = (
     'django_http_requests_latency_including_middlewares_seconds',
@@ -147,13 +153,13 @@ def user_count():
   users = 0
   try:
     users = User.objects.count()
-  except (OperationalError, DatabaseError) as oe:
+  except (OperationalError, DatabaseError, OracleDatabaseError) as oe:
     LOG.debug('user_count recovering from %s' % str(oe))
     connection.close()
     connection.connect()
     users = User.objects.count()
   except Exception as e:
-    LOG.exception('Metrics: Failed to get number of user accounts')
+    LOG.exception('Metrics: Failed to get number of user accounts: %s' % str(e))
   return users
 
 
@@ -205,7 +211,7 @@ def num_of_queries():
       is_history=True,
       last_modified__gt=datetime.now() - timedelta(minutes=10)
     ).count()
-  except (OperationalError, DatabaseError) as oe:
+  except (OperationalError, DatabaseError, OracleDatabaseError) as oe:
     LOG.debug('num_of_queries recovering from %s' % str(oe))
     connection.close()
     connection.connect()
@@ -215,7 +221,7 @@ def num_of_queries():
       last_modified__gt=datetime.now() - timedelta(minutes=10)
     ).count()
   except Exception as e:
-    LOG.exception('Could not get num_of_queries')
+    LOG.exception('Could not get num_of_queries: %s' % str(e))
     count = 0
   return count
 
