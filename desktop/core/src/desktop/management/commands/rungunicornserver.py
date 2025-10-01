@@ -331,7 +331,6 @@ def rungunicornserver(args=[], options={}):
       'reload_engine': None,
       'sendfile': True,
       'spew': None,
-      'ssl_context': gunicorn_ssl_context,
       'statsd_host': None,
       'statsd_prefix': None,
       'suppress_ragged_eofs': None,           # Suppress ragged EOFs (see stdlib ssl module)
@@ -351,6 +350,9 @@ def rungunicornserver(args=[], options={}):
       'post_worker_init': post_worker_init,
       'worker_int': worker_int
   }
+
+  if tls_settings:
+    gunicorn_options.update({'ssl_context': gunicorn_ssl_context})
 
   StandaloneApplication(handler_app, gunicorn_options).run()
 
