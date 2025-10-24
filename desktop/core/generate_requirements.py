@@ -99,6 +99,7 @@ class RequirementsGenerator:
       "python-ldap==3.4.3",
       "python-oauth2==1.1.0",
       "python-pam==2.0.2",
+      "pymysql==1.1.1",
       "pytidylib==0.3.2",
       "pytz==2021.3",
       "PyYAML==6.0.1",
