@@ -89,7 +89,7 @@ class RequirementsGenerator:
       "openpyxl==3.0.9",
       "phoenixdb==1.2.1",
       "prompt-toolkit==3.0.39",
-      "protobuf==3.20.3",
+      "protobuf==4.25.8",
       "psutil==5.8.0",
       "pyarrow==17.0.0",
       "pyformance==0.3.2",
