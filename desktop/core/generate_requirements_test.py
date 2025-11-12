@@ -178,7 +178,7 @@ class TestRequirementsGenerator:
       generator = RequirementsGenerator()
       generator.arch = "ppc64le"
       generator.python_version_string = "3.8"
-      generator.requirements = ["setuptools==70.0.0"]
+      generator.requirements = ["setuptools==80.9.0"]
       generator.local_requirements = []
       generator.arch_requirements_map = {
         "ppc64le": {
@@ -198,7 +198,7 @@ class TestRequirementsGenerator:
 
       expected_requirements = "\n".join(
         [
-          "setuptools==70.0.0",
+          "setuptools==80.9.0",
           "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/numpy-1.23.1-cp38-cp38-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
           "Markdown==3.1",
         ]

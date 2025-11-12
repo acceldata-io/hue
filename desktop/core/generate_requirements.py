@@ -44,7 +44,7 @@ class RequirementsGenerator:
     ]
 
     self.requirements = [
-      "setuptools==70.0.0",
+      "setuptools==80.9.0",
       "apache-ranger==0.0.3",
       "asn1crypto==0.24.0",
       "avro-python3==1.8.2",
@@ -147,7 +147,7 @@ class RequirementsGenerator:
         "numpy==1.24.4",
         "pandas==2.0.3",
         "sasl==0.3.1",
-        "setuptools==70.0.0",
+        "setuptools==80.9.0",
       ],
       "3.9": [
         "decorator==5.1.1",
@@ -178,7 +178,7 @@ class RequirementsGenerator:
         "Markdown==3.1",
         "numpy==1.24.4",
         "pandas==2.0.3",
-        "setuptools==70.0.0",
+        "setuptools==80.9.0",
       ],
       "3.9": [
         "decorator==5.1.1",
