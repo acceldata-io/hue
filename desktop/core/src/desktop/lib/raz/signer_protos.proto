@@ -1,0 +1,58 @@
+syntax = "proto2";
+
+package com.cloudera.cloud.storage.signer;
+
+option java_package = "com.cloudera.cloud.storage.signer.protos";
+option java_outer_classname = "SignerProtocolProtos";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+enum HttpMethodProto {
+  DEFAULT = 0;
+  GET = 1;
+  POST = 2;
+  PUT = 3;
+  DELETE = 4;
+  HEAD = 5;
+}
+
+enum ResponseCodeProto {
+  AUTHZ_AUTHORIZED = 0;
+  AUTHZ_UNAUTHORIZED = 1;
+  AUTHZ_UNKNOWN = 2;
+  ERROR = 3;
+}
+
+message StringStringMapProto {
+  optional string key = 1;
+  optional string value = 2;
+}
+
+message StringListStringMapProto {
+  optional string key = 1;
+  repeated string value = 2;
+}
+
+message AuthorizationResponseProto {
+  optional ResponseCodeProto response_code = 1;
+  repeated string unauthorized_paths = 2;
+  optional string response_message = 3;
+}
+
+message SignRequestProto {
+  optional string endpoint = 1;
+  optional HttpMethodProto http_method = 2;
+  repeated StringStringMapProto headers = 3;
+  repeated StringListStringMapProto parameters = 4;
+  optional bytes content_to_sign = 5;
+  optional string resource_path = 6;
+  optional int32 time_offset = 7;
+  optional string endpoint_prefix = 8;
+  optional string service_name = 9;
+}
+
+message SignResponseProto {
+  optional AuthorizationResponseProto authorization_response = 1;
+  repeated StringStringMapProto signer_generated_headers = 2;
+  optional string region = 3;
+}
