@@ -37,7 +37,7 @@ class RequirementsGenerator:
             "channels==4.0.0",
             "channels-redis==4.0.0",
             "configobj==5.0.9",
-            "cx-Oracle==8.3.0",
+            "git+https://github.com/acceldata-io/python-cx_Oracle",
             "django-auth-ldap==4.3.0",
             "Django==4.1.13",
             "daphne==3.0.2",
