@@ -28,10 +28,10 @@ class Command(BaseCommand):
   Handler for syncing the Hue database with Unix users and groups
   """
   def add_arguments(self, parser):
-    parser.add_argument("--min-uid", help=_("Minimum UID to import (Inclusive)."), default=500)
-    parser.add_argument("--max-uid", help=_("Maximum UID to import (Exclusive)."), default=65334)
-    parser.add_argument("--min-gid", help=_("Minimum GID to import (Inclusive)."), default=500)
-    parser.add_argument("--max-gid", help=_("Maximum GID to import (Exclusive)."), default=65334)
+    parser.add_argument("--min-uid", help=_("Minimum UID to import (Inclusive)."), default=500, type=int)
+    parser.add_argument("--max-uid", help=_("Maximum UID to import (Exclusive)."), default=65334, type=int)
+    parser.add_argument("--min-gid", help=_("Minimum GID to import (Inclusive)."), default=500, type=int)
+    parser.add_argument("--max-gid", help=_("Maximum GID to import (Exclusive)."), default=65334, type=int)
     parser.add_argument("--check-shell", help=_("Whether or not to check that the user's shell is not /bin/false."), default=True)
 
   def handle(self, *args, **options):

@@ -920,10 +920,10 @@ def sync_unix_users_and_groups(min_uid, max_uid, min_gid, max_gid, check_shell):
     # access the associated list of groups
     hue_user.save()
     if username not in user_groups:
-      hue_user.groups = []
+      hue_user.groups.set([])
     else:
       # Here's where that user to group map we built comes in handy
-      hue_user.groups = user_groups[username]
+      hue_user.groups.set(user_groups[username])
     hue_user.save()
     LOG.info(_("Synced user %s from Unix") % hue_user.username)
 
