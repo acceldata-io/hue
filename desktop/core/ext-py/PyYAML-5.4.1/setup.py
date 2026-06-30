@@ -197,7 +197,7 @@ class build_ext(_build_ext):
         self.check_extensions_list(self.extensions)
         filenames = []
         for ext in self.extensions:
-            if with_cython:
+            if with_cython and hasattr(self, 'cython_sources'):
                 self.cython_sources(ext.sources, ext)
             for filename in ext.sources:
                 filenames.append(filename)
