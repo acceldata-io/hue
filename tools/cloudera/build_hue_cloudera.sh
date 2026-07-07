@@ -41,8 +41,8 @@ PYTHON38_OSES=("centos7" "redhat8" "sles12" "ubuntu20" "ubuntu22")
 PYTHON39_OSES=("redhat8" "redhat8-arm64" "redhat9")
 PYTHON311_OSES=("redhat8" "redhat8-arm64" "redhat9" "sles15" "ubuntu22")
 
-LATEST_PYTHON="python3.11"
-PYTHON_VERSIONS=("python3.11" "python3.9" "python3.8")
+LATEST_PYTHON="python3.14"
+PYTHON_VERSIONS=("python3.14" "python3.11" "python3.9" "python3.8")
 
 export REQ_PYTHON38="3.8.12"
 export REQ_PYTHON39="3.9.16"
@@ -80,10 +80,10 @@ setup_python_env() {
         fi
       fi
       ;;
-    python3.11)
+    python3.14)
       if is_supported_os PYTHON311_OSES "$os"; then
         export PYTHON311_PATH=${PYTHON311_PATH:=/opt/python/3.11.12}
-        if is_supported_python_version "$PYTHON311_PATH/bin/python3.11" $REQ_PYTHON311; then
+        if is_supported_python_version "$PYTHON311_PATH/bin/python3.14" $REQ_PYTHON311; then
           export PATH="$PYTHON311_PATH/bin:$PATH"
         else
           unset PYTHON311_PATH
@@ -118,7 +118,7 @@ should_build_python() {
   local os="$2"
 
   case "$ver" in
-    python3.11)
+    python3.14)
       is_supported_os PYTHON311_OSES "$os"
       return $?
       ;;
@@ -154,7 +154,7 @@ for PYTHON_VER in "${PYTHON_VERSIONS[@]}"; do
   if should_build_python "$PYTHON_VER" "$DOCKEROS"; then
     BLD_DIR="${BLD_DIR:-$HUE_SRC/build}"
     BLD_DIR_ENV="$BLD_DIR/venvs/${PYTHON_VER}"
-    [[ "$PYTHON_VER" == "python3.11" || "$DOCKEROS" =~ (sles12|centos7|ubuntu20) ]] && BLD_DIR_ENV="$BLD_DIR/env"
+    [[ "$PYTHON_VER" == "python3.14" || "$DOCKEROS" =~ (sles12|centos7|ubuntu20) ]] && BLD_DIR_ENV="$BLD_DIR/env"
     echo "BLD_DIR_ENV=${BLD_DIR_ENV}"
 
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ORACLE_INSTANTCLIENT19_PATH}
@@ -172,6 +172,6 @@ big_console_header "Hue PROD Build Start for" "$@"
 if [[ "$DOCKEROS" =~ (centos7|sles12|ubuntu18) ]]; then
   PYTHON_VER="python3.8" make release
 else
-  PYTHON_VER="python3.11" make release
+  PYTHON_VER="python3.14" make release
 fi
 big_console_header "Hue PROD Build End for" "$@"
