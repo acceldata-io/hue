@@ -42,7 +42,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential asciidoc libkrb5-dev libldap2-dev libsasl2-dev libxslt-dev libsasl2-modules-gssapi-mit libsnappy-dev libgdbm-dev
 
-          export PYTHON_VER=python3.11
+          export PYTHON_VER=python3.14
           export SKIP_PYTHONDEV_CHECK=true
           export ROOT=$PWD
           make apps test_prep
