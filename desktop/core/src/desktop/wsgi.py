@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import os
+import tempfile
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "desktop.settings")
 
@@ -32,11 +32,17 @@ class DechunkMiddleware(object):
     ends up empty and every form-encoded API call (create_notebook,
     create_session, autocomplete, etc.) sees no fields.
 
-    This middleware drains wsgi.input into an in-memory buffer, hands Django a
-    plain BytesIO with a proper CONTENT_LENGTH, and removes the chunked marker.
+    This middleware drains wsgi.input into a spooled buffer, hands Django a
+    stream with a proper CONTENT_LENGTH, and removes the chunked marker.
+
+    Requests larger than MAX_BODY are rejected with HTTP 413 instead of being
+    silently truncated. The buffer spills from RAM to disk once it exceeds
+    SPOOL_THRESHOLD so many small concurrent requests don't exhaust memory.
     """
 
-    MAX_BODY = 100 * 1024 * 1024  # 100 MB safety cap
+    MAX_BODY = 100 * 1024 * 1024        # 100 MB — anything larger returns 413
+    SPOOL_THRESHOLD = 1 * 1024 * 1024   # 1 MB in RAM before spilling to disk
+    READ_CHUNK = 64 * 1024
 
     def __init__(self, app):
         self.app = app
@@ -45,21 +51,41 @@ class DechunkMiddleware(object):
         te = environ.get("HTTP_TRANSFER_ENCODING", "").lower()
         cl = environ.get("CONTENT_LENGTH", "")
         # Only rewrite when chunked AND Content-Length is absent/empty.
-        if "chunked" in te and not cl:
-            stream = environ.get("wsgi.input")
-            if stream is not None:
-                buf = bytearray()
-                while True:
-                    chunk = stream.read(65536)
-                    if not chunk:
-                        break
-                    buf.extend(chunk)
-                    if len(buf) > self.MAX_BODY:
-                        break
-                body = bytes(buf)
-                environ["wsgi.input"] = io.BytesIO(body)
-                environ["CONTENT_LENGTH"] = str(len(body))
-                environ.pop("HTTP_TRANSFER_ENCODING", None)
+        if "chunked" not in te or cl:
+            return self.app(environ, start_response)
+
+        stream = environ.get("wsgi.input")
+        if stream is None:
+            return self.app(environ, start_response)
+
+        # Small bodies stay in RAM; larger ones spill to a tmpfile so 50
+        # concurrent uploads don't pin 5 GB of heap.
+        buf = tempfile.SpooledTemporaryFile(max_size=self.SPOOL_THRESHOLD)
+        size = 0
+        try:
+            while True:
+                chunk = stream.read(self.READ_CHUNK)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > self.MAX_BODY:
+                    buf.close()
+                    body = b"Payload Too Large\n"
+                    start_response(
+                        "413 Payload Too Large",
+                        [("Content-Type", "text/plain"),
+                         ("Content-Length", str(len(body)))],
+                    )
+                    return [body]
+                buf.write(chunk)
+        except (OSError, IOError):
+            buf.close()
+            raise
+        buf.seek(0)
+
+        environ["wsgi.input"] = buf
+        environ["CONTENT_LENGTH"] = str(size)
+        environ.pop("HTTP_TRANSFER_ENCODING", None)
         return self.app(environ, start_response)
 
 
