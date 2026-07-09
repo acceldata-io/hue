@@ -1,6 +1,6 @@
 import time
 
-from django.conf.urls import url
+from django.urls import re_path
 from django.shortcuts import render
 from django.utils.timezone import now
 
@@ -14,5 +14,5 @@ def test_view(request):
 
 
 urlpatterns = [
-    url('^$', test_view),
+    re_path('^$', test_view),
 ]
