@@ -1068,19 +1068,20 @@ def change_prefix(filename, dst_prefix):
 
 
 def copy_required_modules(dst_prefix, symlink):
-  import imp
+  import importlib.util
 
   for modname in REQUIRED_MODULES:
     if modname in sys.builtin_module_names:
       logger.info("Ignoring built-in bootstrap module: %s" % modname)
       continue
     try:
-      f, filename, _ = imp.find_module(modname)
+      spec = importlib.util.find_spec(modname)
     except ImportError:
+      spec = None
+    if spec is None or spec.origin is None:
       logger.info("Cannot import bootstrap module: %s" % modname)
     else:
-      if f is not None:
-        f.close()
+      filename = spec.origin
       # special-case custom readline.so on OS X, but not for pypy:
       if modname == 'readline' and sys.platform == 'darwin' and not (
           is_pypy or filename.endswith(join('lib-dynload', 'readline.so'))):
