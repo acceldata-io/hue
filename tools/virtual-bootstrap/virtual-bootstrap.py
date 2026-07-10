@@ -27,8 +27,7 @@ import optparse
 import tempfile
 import textwrap
 import subprocess
-import distutils.sysconfig
-from distutils.util import strtobool
+import sysconfig
 from os.path import join
 
 try:
@@ -38,6 +37,22 @@ except ImportError:
 
 __version__ = "15.1.0"
 virtualenv_version = __version__  # legacy
+
+
+def strtobool(val):
+  """Convert a string representation of truth to 1 (true) or 0 (false).
+
+  Inlined from distutils.util.strtobool (distutils was removed from the stdlib in Python 3.12).
+  True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values are 'n', 'no', 'f', 'false',
+  'off', and '0'. Raises ValueError if 'val' is anything else.
+  """
+  val = val.lower()
+  if val in ('y', 'yes', 't', 'true', 'on', '1'):
+    return 1
+  elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+    return 0
+  else:
+    raise ValueError("invalid truth value %r" % (val,))
 
 if sys.version_info < (2, 6):
   print('ERROR: %s' % sys.exc_info()[1])
@@ -1068,14 +1083,16 @@ def change_prefix(filename, dst_prefix):
 
 
 def copy_required_modules(dst_prefix, symlink):
-  import importlib.util
+  import importlib.machinery
 
   for modname in REQUIRED_MODULES:
     if modname in sys.builtin_module_names:
       logger.info("Ignoring built-in bootstrap module: %s" % modname)
       continue
     try:
-      spec = importlib.util.find_spec(modname)
+      # PathFinder.find_spec() (unlike importlib.util.find_spec()) always resolves to the module's real file on
+      # disk, rather than reporting origin='frozen' for the stdlib modules Python 3.11+ ships as frozen bytecode.
+      spec = importlib.machinery.PathFinder.find_spec(modname)
     except ImportError:
       spec = None
     if spec is None or spec.origin is None:
@@ -1193,14 +1210,11 @@ def install_python(home_dir, lib_dir, inc_dir, bin_dir, site_packages, clear, sy
   else:
     logger.debug('No include dir %s' % stdinc_dir)
 
-  platinc_dir = distutils.sysconfig.get_python_inc(plat_specific=1)
+  platinc_dir = sysconfig.get_path('platinclude')
   if platinc_dir != stdinc_dir:
-    platinc_dest = distutils.sysconfig.get_python_inc(
-      plat_specific=1, prefix=home_dir)
-    if platinc_dir == platinc_dest:
-      # Do platinc_dest manually due to a CPython bug;
-      # not http://bugs.python.org/issue3386 but a close cousin
-      platinc_dest = subst_path(platinc_dir, prefix, home_dir)
+    # sysconfig (unlike distutils.sysconfig.get_python_inc) has no "as if installed under this other prefix"
+    # parameter, so compute the venv-relative path the same way the CPython-bug workaround below always did.
+    platinc_dest = subst_path(platinc_dir, prefix, home_dir)
     if platinc_dest:
       # PyPy's stdinc_dir and prefix are relative to the original binary
       # (traversing virtualenvs), whereas the platinc_dir is relative to
@@ -1516,15 +1530,16 @@ def install_python_config(home_dir, bin_dir, prompt=None):
 
 
 def install_distutils(home_dir):
-  distutils_path = change_prefix(distutils.__path__[0], home_dir)
-  mkdir(distutils_path)
-  # FIXME: maybe this prefix setting should only be put in place if
-  # there's a local distutils.cfg with a prefix setting?
-  home_dir = os.path.abspath(home_dir)
-  # FIXME: this is breaking things, removing for now:
-  # distutils_cfg = DISTUTILS_CFG + "\n[install]\nprefix=%s\n" % home_dir
-  writefile(os.path.join(distutils_path, '__init__.py'), DISTUTILS_INIT)
-  writefile(os.path.join(distutils_path, 'distutils.cfg'), DISTUTILS_CFG, overwrite=False)
+  """
+  Intentional no-op, kept only so its call site doesn't need to change.
+
+  This used to vendor a patched distutils/__init__.py + distutils.cfg (DISTUTILS_INIT/DISTUTILS_CFG) into the new
+  environment so its distutils picked up `home_dir` as the install prefix. distutils was removed from the stdlib
+  in Python 3.12, so there is no `distutils` package left to vendor a patched copy of -- not in this bootstrap
+  script's own interpreter, nor in the target environment's. Modern pip/setuptools/wheel installs don't rely on
+  this per-venv distutils.cfg prefix patch, so skipping it is safe.
+  """
+  logger.debug('Skipping install_distutils(): distutils was removed from the stdlib in Python 3.12')
 
 
 def fix_local_scheme(home_dir, symlink=True):
@@ -1560,7 +1575,7 @@ def fix_lib64(lib_dir, symlink=True):
     logger.debug('PyPy detected, skipping lib64 symlinking')
     return
   # Check we have a lib64 library path
-  if not [p for p in distutils.sysconfig.get_config_vars().values()
+  if not [p for p in sysconfig.get_config_vars().values()
           if isinstance(p, basestring) and 'lib64' in p]:
     return
 
