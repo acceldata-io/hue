@@ -17,11 +17,9 @@ from __future__ import absolute_import
 
 from builtins import str, object
 import logging
-import os
-import boto
 
 from aws import conf as aws_conf
-from aws.s3.s3connection import RazS3Connection
+from aws.s3.s3connection import RazS3Connection, S3Connection
 from aws.s3.s3fs import S3FileSystem, S3FileSystemException
 
 from desktop.lib.idbroker import conf as conf_idbroker
@@ -33,6 +31,14 @@ LOG = logging.getLogger()
 
 
 HTTP_SOCKET_TIMEOUT_S = 60
+
+# Maps the legacy boto2 hue.ini `calling_format` class paths to the boto3/botocore `addressing_style` equivalent.
+CALLING_FORMAT_TO_ADDRESSING_STYLE = {
+  'boto.s3.connection.OrdinaryCallingFormat': 'path',
+  'boto.s3.connection.ProtocolIndependentOrdinaryCallingFormat': 'path',
+  'boto.s3.connection.SubdomainCallingFormat': 'virtual',
+  'boto.s3.connection.VHostCallingFormat': 'virtual',
+}
 
 
 def get_credential_provider(identifier, user):
@@ -114,12 +120,6 @@ class Client(object):
     self._is_secure = is_secure
     self.expiration = expiration
 
-    if not boto.config.has_section('Boto'):
-      boto.config.add_section('Boto')
-
-    if not boto.config.get('Boto', 'http_socket_timeout'):
-      boto.config.set('Boto', 'http_socket_timeout', str(self._timeout))
-
   @classmethod
   def from_config(cls, conf, credential_provider):
     credential_provider.validate()
@@ -150,44 +150,54 @@ class Client(object):
       )
 
   def get_s3_connection(self):
-    """S3 connection can actually be seen as a S3Client. A true new client would be a Boto3Client."""
+    """Builds the boto3-backed aws.s3.s3connection.S3Connection used throughout the aws.s3 package."""
     kwargs = {
       'aws_access_key_id': self._access_key_id,
       'aws_secret_access_key': self._secret_access_key,
       'security_token': self._security_token,
       'is_secure': self._is_secure,
-      'calling_format': self._calling_format
+      'addressing_style': CALLING_FORMAT_TO_ADDRESSING_STYLE.get(self._calling_format, 'path'),
+      'timeout': self._timeout,
     }
 
     # Add proxy if configured
     if self._proxy_address is not None:
-      kwargs.update({'proxy': self._proxy_address})
+      proxy_url = self._proxy_address
       if self._proxy_port is not None:
-        kwargs.update({'proxy_port': self._proxy_port})
+        proxy_url = '%s:%s' % (proxy_url, self._proxy_port)
       if self._proxy_user is not None:
-        kwargs.update({'proxy_user': self._proxy_user})
-      if self._proxy_pass is not None:
-        kwargs.update({'proxy_pass': self._proxy_pass})
+        credentials = self._proxy_user if self._proxy_pass is None else '%s:%s' % (self._proxy_user, self._proxy_pass)
+        scheme, _, host_part = proxy_url.partition('://')
+        proxy_url = '%s://%s@%s' % (scheme, credentials, host_part) if host_part else '%s@%s' % (credentials, proxy_url)
+      kwargs['proxies'] = {'http': proxy_url, 'https': proxy_url}
+
+    # self._region is already resolved (falls back to aws_conf.AWS_ACCOUNT_REGION_DEFAULT) by aws_conf.get_region()
+    # in Client.from_config(). Always pass it through so SigV4 signs against the right region even when a custom
+    # host is set below -- otherwise S3Connection would silently sign against its own default region instead.
+    if self._region:
+      kwargs['region_name'] = self._region
 
     # Attempt to create S3 connection based on configured credentials and host or region first, then fallback to IAM
     try:
-      # Use V4 signature support by default
-      os.environ['S3_USE_SIGV4'] = 'True'
       if self._host is not None:
-        kwargs.update({'host': self._host})
-        connection = boto.s3.connection.S3Connection(**kwargs)
+        kwargs['host'] = self._host
+        connection = S3Connection(**kwargs)
       elif self._region:
-        connection = boto.s3.connect_to_region(self._region, **kwargs)
+        connection = S3Connection(**kwargs)
       else:
-        kwargs.update({'host': 's3.amazonaws.com'})
-        connection = boto.s3.connection.S3Connection(**kwargs)
+        kwargs['host'] = 's3.amazonaws.com'
+        connection = S3Connection(**kwargs)
     except Exception as e:
       LOG.exception(e)
       raise S3FileSystemException('Failed to construct S3 Connection, check configurations for aws.')
 
     if connection is None:
-      # If no connection, attempt to fallback to IAM instance metadata
-      connection = boto.connect_s3()
+      # If no connection, attempt to fallback to IAM instance metadata / the default credential chain
+      try:
+        connection = S3Connection()
+      except Exception as e:
+        LOG.exception(e)
+        connection = None
 
       if connection is None:
         raise S3FileSystemException('Can not construct S3 Connection for region %s' % self._region)
