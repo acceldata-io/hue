@@ -21,7 +21,6 @@ from copy import deepcopy
 from io import StringIO as string_io
 
 import pytest
-from future import standard_library
 from past.builtins import basestring
 
 from desktop.lib.django_test_util import make_logged_in_client
@@ -37,7 +36,6 @@ from indexer.solr_client import SolrClient
 from indexer.solr_client_tests import MockSolrCdhCloudHdfsApi
 from useradmin.models import User
 
-standard_library.install_aliases()
 
 LOG = logging.getLogger()
 

@@ -1,4 +1,3 @@
-import cgi
 import hashlib
 import hmac
 from http.cookies import SimpleCookie
@@ -181,7 +180,17 @@ def extract(environ, empty=False, err=False):
     :param empty: Stops on empty fields (default: Fault)
     :param err: Stops on errors in fields (default: Fault)
     """
-    formdata = cgi.parse(environ["wsgi.input"], environ, empty, err)
+    # cgi.parse() (removed in Python 3.13) read the WSGI body itself and picked urlencoded vs. multipart parsing
+    # based on environ's Content-Type. SAML HTTP-POST/Redirect bindings are always urlencoded (never multipart),
+    # so this only replaces that part of cgi.parse()'s behavior.
+    try:
+        length = int(environ.get("CONTENT_LENGTH", 0))
+    except (TypeError, ValueError):
+        length = 0
+    body = environ["wsgi.input"].read(length) if length else b""
+    if isinstance(body, bytes):
+        body = body.decode("utf-8")
+    formdata = parse_qs(body, keep_blank_values=empty, strict_parsing=err)
     # Remove single entries from lists
     for key, value in iter(formdata.items()):
         if len(value) == 1:

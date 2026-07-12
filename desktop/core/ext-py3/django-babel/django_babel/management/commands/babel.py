@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from distutils.dist import Distribution
+import configparser
 from subprocess import call
 
 from django.core.management.base import LabelCommand, CommandError
@@ -8,6 +8,21 @@ from django.conf import settings
 
 
 __all__ = ['Command']
+
+
+def _get_mapping_file_from_setup_cfg():
+    """Look up `[extract_messages] mapping_file` from a nearby setup.cfg.
+
+    This used to be resolved via distutils.dist.Distribution.parse_config_files()/find_config_files()
+    (distutils was removed from the stdlib in Python 3.12). Unlike that, this only looks at ./setup.cfg --
+    the file Babel/Django projects actually use for this setting -- and not the other legacy distutils
+    config locations (a global distutils.cfg, ~/.pydistutils.cfg).
+    """
+    config = configparser.ConfigParser()
+    config.read('setup.cfg')
+    if config.has_section('extract_messages') and config.has_option('extract_messages', 'mapping_file'):
+        return config.get('extract_messages', 'mapping_file')
+    return None
 
 
 class Command(LabelCommand):
@@ -50,17 +65,9 @@ class Command(LabelCommand):
 
         # support for mapping file specification via setup.cfg
         # TODO: Try to support all possible options.
-        distribution = Distribution()
-        distribution.parse_config_files(distribution.find_config_files())
-
         mapping_file = options.pop('mapping_file', None)
-        has_extract = 'extract_messages' in distribution.command_options
-        if mapping_file is None and has_extract:
-            opts = distribution.command_options['extract_messages']
-            try:
-                mapping_file = opts['mapping_file'][1]
-            except (IndexError, KeyError):
-                mapping_file = None
+        if mapping_file is None:
+            mapping_file = _get_mapping_file_from_setup_cfg()
 
         for path in locale_paths:
             potfile = os.path.join(path, '%s.pot' % domain)

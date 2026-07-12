@@ -25,14 +25,12 @@ from datetime import datetime, timedelta
 
 from django.db import connection
 from django.db.utils import DatabaseError, OperationalError
-from future import standard_library
 from prometheus_client import REGISTRY, Gauge
 
 from desktop.conf import ENABLE_PROMETHEUS
 from desktop.lib.metrics import global_registry
 from useradmin.models import User
 
-standard_library.install_aliases()
 
 LOG = logging.getLogger()
 
