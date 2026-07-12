@@ -26,9 +26,9 @@ from builtins import object, str
 from urllib.parse import urlparse as lib_urlparse
 
 from aws.s3.exception import BotoClientError, S3ResponseError
-from boto.s3.connection import Location
+from aws.s3.s3connection import Location
 from boto.s3.key import Key
-from boto.s3.prefix import Prefix
+from aws.s3.s3connection import Prefix
 from django.http.multipartparser import MultiPartParser
 from django.utils.translation import gettext as _
 

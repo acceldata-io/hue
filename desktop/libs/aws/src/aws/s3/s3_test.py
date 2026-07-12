@@ -15,7 +15,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 
-from boto.s3.connection import Location
+from aws.s3.s3connection import Location
 
 import pytest
 from aws import s3
