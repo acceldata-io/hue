@@ -302,22 +302,12 @@ class S3Connection(object):
 
 class RazS3Connection(S3Connection):
   """
-  TODO(boto3-migration): RAZ presigned-URL support is not implemented yet, this is a structural stub only.
+  TODO(boto3-migration): RAZ presigned-URL injection is not implemented yet, this is a structural stub only.
 
-  Under boto2, this class overrode S3Connection.make_request()/build_base_http_request() to swap the outgoing
-  HTTPRequest's signature for a RAZ-issued presigned URL, so no local AWS credentials were ever needed and the
-  regular boto2 XML unmarshalling of the response kept working unchanged.
-
-  boto3/botocore does not expose an equivalent low-level "build the request, let me mutate it, then send it"
-  hook. Re-implementing this needs one of:
-    - a botocore event handler registered on `client.meta.events` (e.g. `before-sign.s3.*`) that replaces the
-      outgoing request's URL/query-string/headers with the RAZ presigned URL and disables SigV4 signing for it, or
-    - bypassing botocore's HTTP layer entirely for RAZ-enabled deployments: issue the request with `requests`
-      using the RAZ presigned URL directly, then feed the raw XML response back into botocore's own response
-      parser/unmarshaller to keep returning the same Bucket/Key/Prefix shapes as the rest of this module.
-
-  Until one of those is implemented, RAZ-enabled S3 access will not work end-to-end through this class; every
-  operation constructed by `aws.client._make_client()` for a RAZ deployment currently goes through this stub.
+  boto2 could intercept a request right before sending it and swap in a RAZ presigned URL; botocore has no
+  equivalent hook exposed by its client methods, so this needs a real design pass later (likely via botocore's
+  `choose-signer`/`before-send` events). Until then, RAZ-enabled S3 access will not work end-to-end: requests go
+  out unsigned and get rejected with 403.
   """
 
   def __init__(self, username, host=None, **kwargs):
