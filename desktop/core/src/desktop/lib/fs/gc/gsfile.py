@@ -15,7 +15,6 @@
 # limitations under the License.
 import errno
 
-from boto.s3.keyfile import KeyFile
 from aws.s3.s3file import _ReadableS3File
 
 
@@ -45,6 +44,8 @@ class _ReadableGSFile(_ReadableS3File):
   This class extends _ReadableS3File for reading GS files.
   """
   def __init__(self, key):
-    key_copy = key.bucket.get_key(key.name)
-    KeyFile.__init__(self, key_copy)
+    self._key = key.bucket.get_key(key.name)
+    self._pos = 0
+    self._size = None
+    self._body = None
 
