@@ -15,11 +15,12 @@
 # limitations under the License.
 
 import logging
+from functools import wraps
 from urllib.parse import parse_qs, unquote, urlencode
 
 import boto
 from boto.connection import HTTPRequest
-from boto.exception import BotoClientError
+from aws.s3.exception import BotoClientError, S3ResponseError
 from boto.regioninfo import connect
 from boto.resultset import ResultSet
 from boto.s3 import S3RegionInfo
@@ -31,6 +32,24 @@ from desktop.conf import RAZ
 from desktop.lib.raz.clients import S3RazClient
 
 LOG = logging.getLogger()
+
+def translate_boto3_error(fn):
+  """
+  Decorator for the new boto3-backed methods we're about to add to this file (Key/Bucket/S3Connection).
+
+  Wraps a function that talks to boto3, and converts botocore's own exceptions into the boto2-shaped
+  S3ResponseError/BotoClientError (aws.s3.exceptions) that the rest of `aws` already catches -- so callers like
+  s3fs.py's `except S3ResponseError as e: if e.status == 404` keep working without any changes.
+  """
+  @wraps(fn)
+  def wrapped(*args, **kwargs):
+    try:
+      return fn(*args, **kwargs)
+    except ClientError as e:
+      raise S3ResponseError.from_client_error(e)
+    except BotoCoreError as e:
+      raise BotoClientError(str(e))
+  return wrapped
 
 
 class RazS3Connection(S3Connection):

@@ -25,7 +25,7 @@ import urllib.request
 from builtins import object, str
 from urllib.parse import urlparse as lib_urlparse
 
-from boto.exception import BotoClientError, S3ResponseError
+from aws.s3.exception import BotoClientError, S3ResponseError
 from boto.s3.connection import Location
 from boto.s3.key import Key
 from boto.s3.prefix import Prefix
