@@ -2029,7 +2029,8 @@ def recursive_find_module(name, path=None):
             raise ImportError("No module named %s" % part)
         mod_a = importlib.util.module_from_spec(spec)
         sys.modules[name] = mod_a
-        spec.loader.exec_module(mod_a)  # module_from_spec() only creates the module object, this actually runs it
+        if spec.loader is not None:
+            spec.loader.exec_module(mod_a)  # module_from_spec() only creates the module object, this actually runs it
         path = mod_a.__path__
 
     return mod_a
@@ -2044,7 +2045,9 @@ def get_mod(name, path=None):
         spec = importlib.machinery.PathFinder.find_spec(name, path)
         if spec is not None:
             mod_a = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod_a)
+            sys.modules[name] = mod_a
+            if spec.loader is not None:
+                spec.loader.exec_module(mod_a)
         elif "." in name:
             mod_a = recursive_find_module(name, path)
         else:

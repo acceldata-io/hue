@@ -184,10 +184,10 @@ def extract(environ, empty=False, err=False):
     # based on environ's Content-Type. SAML HTTP-POST/Redirect bindings are always urlencoded (never multipart),
     # so this only replaces that part of cgi.parse()'s behavior.
     try:
-        length = int(environ.get("CONTENT_LENGTH", 0))
+        length = int(environ.get("CONTENT_LENGTH") or 0)
     except (TypeError, ValueError):
         length = 0
-    body = environ["wsgi.input"].read(length) if length else b""
+    body = environ["wsgi.input"].read(length) if length else environ["wsgi.input"].read()
     if isinstance(body, bytes):
         body = body.decode("utf-8")
     formdata = parse_qs(body, keep_blank_values=empty, strict_parsing=err)
