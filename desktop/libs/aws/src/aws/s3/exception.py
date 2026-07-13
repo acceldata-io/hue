@@ -16,38 +16,38 @@
 
 
 class BotoClientError(Exception):
-    """
-    General Boto Client error (error accessing AWS)
-    """
-    def __init__(self, reason, *args):
-        super(BotoClientError, self).__init__(reason, *args)
-        self.reason = reason
-        self.message = reason
+  """
+  General Boto Client error (error accessing AWS)
+  """
+  def __init__(self, reason, *args):
+      super(BotoClientError, self).__init__(reason, *args)
+      self.reason = reason
+      self.message = reason
 
-    def __repr__(self):
-        return 'BotoClientError: %s' % self.reason
+  def __repr__(self):
+      return 'BotoClientError: %s' % self.reason
 
-    def __str__(self):
-        return 'BotoClientError: %s' % self.reason
+  def __str__(self):
+      return 'BotoClientError: %s' % self.reason
 
 class S3ResponseError(Exception):
-    """
-    boto2 shaped wrapper around botocore.exceptions.ClientError.
+  """
+  boto2 shaped wrapper around botocore.exceptions.ClientError.
 
-    Exposes the same `.status`, `.reason`, `.message`, `.body` attributes that callers throughout `aws` already
-    match on, so call sites do not need to be rewritten against botocore's `e.response['Error']['Code']` shape.
-    """
+  Exposes the same `.status`, `.reason`, `.message`, `.body` attributes that callers throughout `aws` already
+  match on, so call sites do not need to be rewritten against botocore's `e.response['Error']['Code']` shape.
+  """
 
-    def __init__(self, status, reason, body=None, message=None):
-        super(S3ResponseError, self).__init__('%s %s: %s' % (status, reason, message or ''))
-        self.status = status
-        self.reason = reason
-        self.body = body or ''
-        self.message = message or reason
+  def __init__(self, status, reason, body=None, message=None):
+      super(S3ResponseError, self).__init__('%s %s: %s' % (status, reason, message or ''))
+      self.status = status
+      self.reason = reason
+      self.body = body or ''
+      self.message = message or reason
 
-    @classmethod
-    def from_client_error(cls, client_error):
-        error = client_error.response.get('Error', {}) or {}
-        status = client_error.response.get('ResponseMetadata', {}).get('HTTPStatusCode', 400)
-        return cls(status=status, reason=error.get('Code', 'Unknown'), body=str(client_error), message=error.get('Message'))
+  @classmethod
+  def from_client_error(cls, client_error):
+      error = client_error.response.get('Error', {}) or {}
+      status = client_error.response.get('ResponseMetadata', {}).get('HTTPStatusCode', 400)
+      return cls(status=status, reason=error.get('Code', 'Unknown'), body=str(client_error), message=error.get('Message'))
 

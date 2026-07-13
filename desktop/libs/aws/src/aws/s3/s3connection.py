@@ -34,7 +34,7 @@ def translate_boto3_error(fn):
   Decorator for the new boto3-backed methods we're about to add to this file (Key/Bucket/S3Connection).
 
   Wraps a function that talks to boto3, and converts botocore's own exceptions into the boto2-shaped
-  S3ResponseError/BotoClientError (aws.s3.exceptions) that the rest of `aws` already catches -- so callers like
+  S3ResponseError/BotoClientError (aws.s3.exception) that the rest of `aws` already catches -- so callers like
   s3fs.py's `except S3ResponseError as e: if e.status == 404` keep working without any changes.
   """
   @wraps(fn)

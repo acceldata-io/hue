@@ -162,13 +162,20 @@ class Client(object):
 
     # Add proxy if configured
     if self._proxy_address is not None:
-      proxy_url = self._proxy_address
+      # botocore/urllib3 require a scheme on the proxy URL (e.g. "http://host:port"); self._proxy_address is
+      # usually just a bare hostname, so make sure one is always present instead of only preserving an existing one.
+      scheme = 'http'
+      netloc = self._proxy_address
+      if '://' in netloc:
+        scheme, _, netloc = netloc.partition('://')
+
       if self._proxy_port is not None:
-        proxy_url = '%s:%s' % (proxy_url, self._proxy_port)
+        netloc = '%s:%s' % (netloc, self._proxy_port)
       if self._proxy_user is not None:
         credentials = self._proxy_user if self._proxy_pass is None else '%s:%s' % (self._proxy_user, self._proxy_pass)
-        scheme, _, host_part = proxy_url.partition('://')
-        proxy_url = '%s://%s@%s' % (scheme, credentials, host_part) if host_part else '%s@%s' % (credentials, proxy_url)
+        netloc = '%s@%s' % (credentials, netloc)
+
+      proxy_url = '%s://%s' % (scheme, netloc)
       kwargs['proxies'] = {'http': proxy_url, 'https': proxy_url}
 
     # self._region is already resolved (falls back to aws_conf.AWS_ACCOUNT_REGION_DEFAULT) by aws_conf.get_region()

@@ -86,7 +86,12 @@ class _ReadableS3File(object):
     else:
       raise IOError(errno.EINVAL, 'Unsupported whence value "%s"' % whence)
 
+    if new_pos < 0:
+      raise IOError(errno.EINVAL, 'Negative seek position "%s"' % new_pos)
+
     if new_pos != self._pos:
+      if self._body is not None:
+        self._body.close()
       self._pos = new_pos
       self._body = None  # Force a re-open with an updated Range on the next read()
     return self._pos
