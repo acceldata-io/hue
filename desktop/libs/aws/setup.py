@@ -24,6 +24,6 @@ setup(
   description='AmazonWebServices Libraries',
   packages=find_packages('src'),
   package_dir={'': 'src'},
-  install_requires=['setuptools', 'desktop', 'boto3'],
+  install_requires=['setuptools', 'desktop', 'boto'],
   entry_points={'desktop.sdk.lib': 'aws=aws'}
 )
