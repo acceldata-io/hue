@@ -15,7 +15,7 @@ setup(
     name='django-babel',
     description='Utilities for using Babel in Django',
     long_description=read('README.rst') + u'\n\n' + read('CHANGELOG.rst'),
-    version='0.6.3.dev0',
+    version='0.6.4.dev0',
     license='BSD',
     author='Christopher Grebs',
     author_email='cg@webshox.org',
@@ -24,7 +24,7 @@ setup(
     url='https://github.com/python-babel/django-babel/',
     packages=find_packages(exclude=('tests',)),
     install_requires=[
-        'django>=1.8,<4.2',
+        'django>=4.2,<5.0',
         'babel>=1.3',
     ],
     classifiers=[
