@@ -27,7 +27,7 @@ import time
 
 from functools import wraps
 
-from boto.exception import S3ResponseError
+from aws.s3.exception import S3ResponseError
 from hadoop.fs import normpath as fs_normpath
 
 
