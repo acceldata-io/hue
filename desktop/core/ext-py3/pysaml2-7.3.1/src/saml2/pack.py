@@ -10,10 +10,7 @@ Bindings normally consists of three parts:
 import base64
 
 
-try:
-    import html
-except Exception:
-    import cgi as html
+import html
 
 import logging
 from urllib.parse import urlencode

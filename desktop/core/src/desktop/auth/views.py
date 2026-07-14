@@ -20,7 +20,7 @@ try:
 except Exception:
   oauth = None
 
-import cgi
+from urllib.parse import parse_qsl
 import logging
 from datetime import datetime
 from urllib.parse import urlencode as urllib_urlencode
@@ -298,7 +298,7 @@ def oauth_login(request):
   if resp['status'] != '200':
     raise Exception(_("Invalid response from OAuth provider: %s") % resp)
 
-  request.session['request_token'] = dict(cgi.parse_qsl(content))
+  request.session['request_token'] = dict(parse_qsl(content))
 
   url = "%s?oauth_token=%s" % (OAUTH.AUTHENTICATE_URL.get(), request.session['request_token']['oauth_token'])
 
@@ -315,7 +315,7 @@ def oauth_authenticated(request):
   if resp['status'] != '200':
     raise Exception(_("Invalid response from OAuth provider: %s") % resp)
 
-  access_token = dict(cgi.parse_qsl(content))
+  access_token = dict(parse_qsl(content))
 
   user = authenticate(access_token=access_token)
   login(request, user)

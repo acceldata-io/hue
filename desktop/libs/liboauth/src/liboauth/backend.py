@@ -18,7 +18,7 @@
 See desktop/auth/backend.py
 """
 
-import cgi
+from urllib.parse import parse_qsl
 import sys
 import json
 import logging
@@ -109,7 +109,7 @@ class OAuthBackend(DesktopBackendBase):
         resp, content = client.request(access_token_uri + oauth_verifier, "GET")
         if resp['status'] != '200':
             raise Exception(_("Invalid response from OAuth provider: %s") % resp)
-        access_token = dict(cgi.parse_qsl(content))
+        access_token = dict(parse_qsl(content))
         access_token['screen_name'] = ''.join([x for x in access_token['screen_name'] if x.isalnum()])
 
     else:
@@ -171,7 +171,7 @@ class OAuthBackend(DesktopBackendBase):
                     access_token = ""
         # facebook
         elif social == 'facebook':
-            access_tok = (dict(cgi.parse_qsl(cont)))['access_token']
+            access_tok = (dict(parse_qsl(cont)))['access_token']
             auth_token_uri = authentication_token_uri + access_tok
             resp, content = parser.request(auth_token_uri, "GET")
             if resp['status'] != '200':
@@ -257,7 +257,7 @@ class OAuthBackend(DesktopBackendBase):
        resp, content = client.request(token_request_uri, "POST", body=lib_urlencode({'oauth_callback': redirect_uri}))
        if resp['status'] != '200':
            raise Exception(_("Invalid response from OAuth provider: %s") % resp)
-       request.session['request_token'] = dict(cgi.parse_qsl(content))
+       request.session['request_token'] = dict(parse_qsl(content))
        url = "{token_authentication_uri}?oauth_token={oauth_token}".format(
             token_authentication_uri=token_authentication_uri,
             oauth_token=request.session['request_token']['oauth_token']
