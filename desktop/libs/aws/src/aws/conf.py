@@ -28,7 +28,12 @@ from hadoop.core_site import get_raz_api_url, get_raz_s3_default_bucket, get_s3a
 LOG = logging.getLogger()
 
 
-DEFAULT_CALLING_FORMAT = 'boto.s3.connection.OrdinaryCallingFormat'
+DEFAULT_CALLING_FORMAT = 'boto.s3.connection.OrdinaryCallingFormat'  # Kept for hue.ini backward compatibility, see aws.client.CALLING_FORMAT_TO_ADDRESSING_STYLE
+
+# 169.254.169.254 is the fixed, AWS-reserved link-local address of the EC2 Instance Metadata Service (IMDS) -- it is
+# the same on every EC2 instance, in every account/region, by design. It is still made overridable via the standard
+# AWS_EC2_METADATA_SERVICE_ENDPOINT env var (respected by the official AWS SDKs) for IMDS proxies, local testing, etc.
+INSTANCE_METADATA_ENDPOINT = os.environ.get('AWS_EC2_METADATA_SERVICE_ENDPOINT', 'http://169.254.169.254').rstrip('/')
 SUBDOMAIN_ENDPOINT_RE = 's3.(?P<region>[a-z0-9-]+).amazonaws.com'
 HYPHEN_ENDPOINT_RE = 's3-(?P<region>[a-z0-9-]+).amazonaws.com'
 DUALSTACK_ENDPOINT_RE = 's3.dualstack.(?P<region>[a-z0-9-]+).amazonaws.com'
@@ -125,10 +130,9 @@ def get_region(conf=None):
 
   if not region and is_ec2_instance():
     try:
-      import boto.utils
-      data = boto.utils.get_instance_identity(timeout=1, num_retries=1)
+      data = _get_instance_identity_document()
       if data:
-        region = data['document']['region']
+        region = data['region']
     except Exception as e:
       LOG.exception("Encountered error when fetching instance identity: %s" % e)
 
@@ -143,6 +147,39 @@ def get_region(conf=None):
   REGION_CACHED = region
 
   return region
+
+
+def _get_imds_token(timeout=1):
+  resp = requests.put(
+    '%s/latest/api/token' % INSTANCE_METADATA_ENDPOINT,
+    headers={'X-aws-ec2-metadata-token-ttl-seconds': '21600'},
+    timeout=timeout,
+  )
+  resp.raise_for_status()
+  return resp.text
+
+
+def _imds_get(path, timeout=1):
+  """
+  GET a path off the EC2 Instance Metadata Service.
+
+  Uses an IMDSv2 token when the token endpoint answers (required on hardened instances that disable IMDSv1), and
+  transparently falls back to an unauthenticated IMDSv1-style request otherwise.
+  """
+  headers = {}
+  try:
+    headers['X-aws-ec2-metadata-token'] = _get_imds_token(timeout=timeout)
+  except Exception:
+    pass
+
+  resp = requests.get('%s/%s' % (INSTANCE_METADATA_ENDPOINT, path), headers=headers, timeout=timeout)
+  resp.raise_for_status()
+  return resp
+
+
+def _get_instance_identity_document():
+  """Replacement for boto.utils.get_instance_identity(...)['document'], queried directly from the EC2 IMDS."""
+  return _imds_get('latest/dynamic/instance-identity/document').json()
 
 
 def get_key_expiry():
@@ -302,8 +339,9 @@ def is_ec2_instance():
 
   if IS_EC2_CACHED is None:
     try:
-      resp = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/')  # Definitive way to check
-      IS_EC2_CACHED = resp.status_code == 200
+      # Definitive way to check. Goes through _imds_get() (rather than a bare request) so this also succeeds on
+      # hardened instances that require an IMDSv2 token and would otherwise 401 here and give a false negative.
+      IS_EC2_CACHED = _imds_get('latest/dynamic/instance-identity/').status_code == 200
     except Exception as e:
       IS_EC2_CACHED = False
       LOG.info("Detecting if Hue on an EC2 host, error might be expected: %s" % e)
@@ -319,9 +357,9 @@ def has_iam_metadata():
       return IS_IAM_CACHED
 
     if is_ec2_instance():
-      import boto.utils
-      metadata = boto.utils.get_instance_metadata(timeout=1, num_retries=1)
-      IS_IAM_CACHED = 'iam' in metadata
+      # Replacement for boto.utils.get_instance_metadata(...) which listed the top-level EC2 IMDS categories.
+      resp = _imds_get('latest/meta-data/')
+      IS_IAM_CACHED = 'iam' in resp.text.split('\n')
     else:
       IS_IAM_CACHED = False
   except Exception:
