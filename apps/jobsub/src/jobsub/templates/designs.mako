@@ -14,7 +14,6 @@
 ## limitations under the License.
 
 <%!
-import cgi
 import sys
 import time
 from desktop.views import commonheader, commonfooter
