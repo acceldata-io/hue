@@ -2848,6 +2848,32 @@ GC_ACCOUNTS = UnspecifiedConfigSection(
         key='json_credentials',
         type=str,
         default=None,
+        help=_(
+          'Deprecated: OAuth2 service-account JSON credentials. This was only usable through the boto2 '
+          '"gcs_oauth2_boto_plugin" auth handler, which has no boto3/botocore equivalent (botocore only signs '
+          'requests with access-key/secret-key pairs). Set access_key_id/secret_access_key to a GCS HMAC key '
+          '(https://cloud.google.com/storage/docs/authentication/hmackeys) instead.'
+        ),
+      ),
+      ACCESS_KEY_ID=Config(
+        key='access_key_id',
+        type=str,
+        default=None,
+        help=_('GCS HMAC access key ID, used to authenticate to the GCS XML API through the boto3 S3-compatible client.'),
+      ),
+      SECRET_ACCESS_KEY=Config(
+        key='secret_access_key',
+        type=str,
+        private=True,
+        default=None,
+        help=_('GCS HMAC secret matching access_key_id.'),
+      ),
+      REGION=Config(
+        key='region',
+        type=str,
+        default='auto',
+        help=_('Placeholder region used to compute the SigV4 signature for GCS XML API requests. Leave as "auto" unless '
+               'Google documents a different value for your setup.'),
       ),
       DEFAULT_HOME_PATH=Config(
         key="default_home_path",
@@ -2867,8 +2893,10 @@ def is_cm_managed():
 def is_gs_enabled():
   from desktop.lib.idbroker import conf as conf_idbroker  # Circular dependencies  desktop.conf -> idbroker.conf -> desktop.conf
 
-  return ('default' in list(GC_ACCOUNTS.keys()) and GC_ACCOUNTS['default'].JSON_CREDENTIALS.get()) or is_raz_gs() or \
-    conf_idbroker.is_idbroker_enabled('gs')
+  return (
+    'default' in list(GC_ACCOUNTS.keys()) and
+    (GC_ACCOUNTS['default'].ACCESS_KEY_ID.get() or GC_ACCOUNTS['default'].JSON_CREDENTIALS.get())
+  ) or is_raz_gs() or conf_idbroker.is_idbroker_enabled('gs')
 
 
 def has_gs_access(user):
