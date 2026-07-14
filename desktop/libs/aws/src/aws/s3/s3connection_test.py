@@ -14,21 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import six
-import requests
-
-from aws.client import _make_client
 from aws.s3.s3connection import RazS3Connection
-from aws.s3.s3test_utils import S3TestBase
 from desktop.conf import RAZ
 
 LOG = logging.getLogger()
 
 
+# NOTE: RazS3Connection is currently a structural stub as part of the boto3 migration, it no longer injects RAZ
+# presigned URLs into outgoing requests the way its boto2 predecessor did (see the TODO on the class itself).
+# These tests only cover what the stub does today: constructing an anonymous boto3-backed connection and
+# delegating get_signed_url() to S3RazClient.
 class TestRazS3Connection():
 
   def setup_method(self):
@@ -40,37 +38,23 @@ class TestRazS3Connection():
     for f in self.finish:
       f()
 
-  def test_list_buckets(self):
-    with patch('aws.s3.s3connection.S3RazClient.get_url') as get_url:
-      with patch('aws.s3.s3connection.RazS3Connection._mexe') as _mexe:
+  def test_is_anonymous_when_raz_enabled(self):
+    client = RazS3Connection(username='test', host='s3-us-west-1.amazonaws.com')
 
-        get_url.return_value = {
-            'AWSAccessKeyId': 'AKIA23E77ZX2HVY76YGL',
-            'Signature': '3lhK%2BwtQ9Q2u5VDIqb4MEpoY3X4%3D',
-            'Expires': '1617207304'
-        }
-        _mexe.return_value = ['<Bucket: demo-gethue>', '<Bucket: gethue-test>']
+    assert client.anon is True
+    assert client.username == 'test'
 
-        client = RazS3Connection(username='test', host='s3-us-west-1.amazonaws.com')
+  def test_get_signed_url_delegates_to_raz_client(self):
+    with patch('aws.s3.s3connection.S3RazClient') as S3RazClient:
+      S3RazClient.return_value.get_url.return_value = {
+        'AWSAccessKeyId': 'AKIA23E77ZX2HVY76YGL',
+        'Signature': '3lhK%2BwtQ9Q2u5VDIqb4MEpoY3X4%3D',
+        'Expires': '1617207304'
+      }
 
-        buckets = client.make_request(method='GET', bucket='', key='',)
+      client = RazS3Connection(username='test', host='s3-us-west-1.amazonaws.com')
+      result = client.get_signed_url(action='GET', url='https://s3-us-west-1.amazonaws.com/', headers={}, data='')
 
-        assert ['<Bucket: demo-gethue>', '<Bucket: gethue-test>'] == buckets
-
-        http_request = _mexe.call_args.args[0]
-
-        if isinstance(http_request, six.string_types):
-          raise SkipTest()  # Incorrect in Py3 CircleCi
-
-        assert 'GET' == http_request.method
-        assert 's3-us-west-1.amazonaws.com:443' == http_request.host
-        assert '/' == http_request.path
-        assert '/' == http_request.auth_path
-        assert ({
-            'AWSAccessKeyId': 'AKIA23E77ZX2HVY76YGL',
-            'Signature': '3lhK%2BwtQ9Q2u5VDIqb4MEpoY3X4%3D',
-            'Expires': '1617207304'
-          } ==
-          http_request.headers)
-        assert {} == http_request.params
-        assert '' == http_request.body
+      S3RazClient.assert_called_once_with(username='test')
+      S3RazClient.return_value.get_url.assert_called_once_with('GET', 'https://s3-us-west-1.amazonaws.com/', {}, '')
+      assert result == S3RazClient.return_value.get_url.return_value

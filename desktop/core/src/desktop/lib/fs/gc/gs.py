@@ -20,10 +20,8 @@ import time
 import logging
 import posixpath
 
-from boto.exception import BotoClientError, GSResponseError
-from boto.gs.connection import Location
-from boto.gs.key import Key
-from boto.s3.prefix import Prefix
+from aws.s3.exception import BotoClientError, S3ResponseError as GSResponseError
+from aws.s3.s3connection import Location, Key, Prefix
 from django.http.multipartparser import MultiPartParser
 from django.utils.translation import gettext as _
 

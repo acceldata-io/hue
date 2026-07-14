@@ -29,7 +29,7 @@ import time
 
 from functools import wraps
 
-from boto.exception import GSResponseError
+from aws.s3.exception import S3ResponseError as GSResponseError
 from hadoop.fs import normpath as fs_normpath
 
 LOG = logging.getLogger()
