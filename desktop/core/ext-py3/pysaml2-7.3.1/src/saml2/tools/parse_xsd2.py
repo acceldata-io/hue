@@ -2,7 +2,8 @@
 
 import errno
 import getopt
-import imp
+import importlib.machinery
+import importlib.util
 import re
 import sys
 import time
@@ -2021,13 +2022,15 @@ def recursive_find_module(name, path=None):
     mod_a = None
     for part in parts:
         # print("$$", part, path)
-        try:
-            (fil, pathname, desc) = imp.find_module(part, path)
-        except ImportError:
-            raise
-
-        mod_a = imp.load_module(name, fil, pathname, desc)
+        # importlib.machinery.PathFinder.find_spec() (unlike importlib.util.find_spec()) searches within an
+        # explicit list of directories, matching what imp.find_module(name, path) used to do.
+        spec = importlib.machinery.PathFinder.find_spec(part, path)
+        if spec is None:
+            raise ImportError("No module named %s" % part)
+        mod_a = importlib.util.module_from_spec(spec)
         sys.modules[name] = mod_a
+        if spec.loader is not None:
+            spec.loader.exec_module(mod_a)  # module_from_spec() only creates the module object, this actually runs it
         path = mod_a.__path__
 
     return mod_a
@@ -2039,14 +2042,16 @@ def get_mod(name, path=None):
         if not isinstance(mod_a, types.ModuleType):
             raise KeyError
     except KeyError:
-        try:
-            (fil, pathname, desc) = imp.find_module(name, path)
-            mod_a = imp.load_module(name, fil, pathname, desc)
-        except ImportError:
-            if "." in name:
-                mod_a = recursive_find_module(name, path)
-            else:
-                raise
+        spec = importlib.machinery.PathFinder.find_spec(name, path)
+        if spec is not None:
+            mod_a = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod_a
+            if spec.loader is not None:
+                spec.loader.exec_module(mod_a)
+        elif "." in name:
+            mod_a = recursive_find_module(name, path)
+        else:
+            raise ImportError("No module named %s" % name)
         sys.modules[name] = mod_a
     return mod_a
 

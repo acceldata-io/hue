@@ -16,13 +16,20 @@
 # (https://github.com/pandas-dev/pandas), which is permitted for use under
 # the BSD 3-Clause License
 
-from distutils.sysconfig import get_config_var
-from distutils.version import LooseVersion
 import os
 import platform
+import sysconfig
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import sys
+
+try:
+    # setuptools vendors its own copy of distutils (distutils was removed from the stdlib in Python 3.12).
+    # setuptools is already a hard dependency of this build script, so this adds no new dependency.
+    from setuptools._distutils.version import LooseVersion
+except ImportError:
+    # Fall back to the stdlib copy, in case this ever runs on a pre-3.12 Python without setuptools' vendored one.
+    from distutils.version import LooseVersion
 
 
 # From https://github.com/pandas-dev/pandas/pull/24274:
@@ -34,7 +41,7 @@ if sys.platform == 'darwin':
     if 'MACOSX_DEPLOYMENT_TARGET' not in os.environ:
         current_system = LooseVersion(platform.mac_ver()[0])
         python_target = LooseVersion(
-            get_config_var('MACOSX_DEPLOYMENT_TARGET'))
+            sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET'))
         if python_target < '10.9' and current_system >= '10.9':
             os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
 
