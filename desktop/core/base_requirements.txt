@@ -70,6 +70,7 @@ tablib==0.13.0
 tabulate==0.8.9
 tornado==6.5.6  # pinned for CVE-2026-49853, CVE-2026-49855 (transitive)
 trino==0.329.0
+ujson==5.12.1  # pinned for CVE-2026-44660 (transitive)
 git+https://github.com/gethue/thrift.git
 thrift-sasl==0.4.3
 django-utils-six==2.0
