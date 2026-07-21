@@ -32,7 +32,7 @@ class RequirementsGenerator:
             "asn1crypto==0.24.0",
             "avro-python3==1.8.2",
             "Babel==2.9.1",
-            "cbor2==5.8.0",
+            "cbor2==5.9.0",
             "celery[redis]==5.4.0",
             "cffi==1.15.0",
             "channels==4.0.0",
