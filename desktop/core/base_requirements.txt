@@ -56,6 +56,7 @@ PyJWT==2.4.0
 PyMySQL==1.1.0
 PyYAML==6.0.1
 requests==2.32.3
+urllib3==2.7.0  # pinned for CVE-2026-44432 (transitive via requests)
 requests-kerberos==0.14.0
 krb5==0.5.1  # pinned for Sles12, dep of requests-kerberos 0.14.0
 rsa==4.7.2
