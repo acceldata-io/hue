@@ -37,7 +37,7 @@ jdcal==1.0.1
 kazoo==2.8.0
 kerberos==1.3.0
 kubernetes==26.1.0
-Mako==1.2.3
+Mako==1.3.12
 Markdown==3.8.1
 openpyxl==3.0.9
 phoenixdb==1.2.1
