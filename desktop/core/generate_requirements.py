@@ -120,7 +120,7 @@ class RequirementsGenerator:
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/pandas-1.4.3-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/lxml-4.6.4-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
                 "PyYAML==6.0.1",
-                "Markdown==3.8",
+                "Markdown==3.8.1",
             ]
         }
         self.x86_64_requirements = {
@@ -139,7 +139,7 @@ class RequirementsGenerator:
                 "pandas==2.0.3",
                 "lxml==4.9.1",
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
-                "Markdown==3.8",
+                "Markdown==3.8.1",
                 "decorator==5.1.1",
             ],
             "3.11": [
@@ -149,7 +149,7 @@ class RequirementsGenerator:
                 "lxml==4.9.1",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
-                "Markdown==3.8",
+                "Markdown==3.8.1",
             ],
         }
         self.aarch64_requirements = {
@@ -166,7 +166,7 @@ class RequirementsGenerator:
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
-                "Markdown==3.8",
+                "Markdown==3.8.1",
                 "decorator==5.1.1",
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
@@ -177,7 +177,7 @@ class RequirementsGenerator:
                 "lxml==4.9.1",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
-                "Markdown==3.8"
+                "Markdown==3.8.1"
             ],
         }
         self.arch_requirements_map = {
