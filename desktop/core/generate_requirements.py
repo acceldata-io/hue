@@ -97,7 +97,7 @@ class RequirementsGenerator:
             "trino==0.329.0",
             "git+https://github.com/gethue/thrift.git",
             "thrift-sasl==0.4.3",
-            "urllib3==2.6.3",
+            "urllib3==2.7.0",
             "django-utils-six==2.0",
             "six==1.16.0",
             "psutil==5.8.0",
