@@ -6,6 +6,8 @@ avro-python3==1.8.2
 Babel==2.9.1
 celery[redis]==5.4.0
 cffi==1.15.0
+cryptography==48.0.1  # pinned with pyOpenSSL for GHSA-537c-gmf6-5ccf / CVE-2026-27459; must move together (transitive)
+pyOpenSSL==26.0.0  # requires cryptography>=46 (transitive)
 channels==4.0.0
 channels-redis==4.0.0
 configobj==5.0.9
