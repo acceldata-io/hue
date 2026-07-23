@@ -54,7 +54,7 @@ class RequirementsGenerator:
             "django-webpack-loader==1.0.0",
             "djangomako==1.3.2",
             "djangorestframework-simplejwt==5.2.1",
-            "djangorestframework==3.14.0",
+            "djangorestframework==3.15.2",
             "djangosaml2==1.9.3",
             "future==0.18.3",
             "gcs-oauth2-boto-plugin==3.0",
