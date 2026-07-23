@@ -72,7 +72,7 @@ class RequirementsGenerator:
             "prompt-toolkit==3.0.39",
             "protobuf==5.29.6",
             "pyarrow==17.0.0",
-            "pyasn1==0.6.2",
+            "pyasn1==0.6.3",
             "pyformance==0.3.2",
             "pymysql==1.1.1",
             "python-dateutil==2.8.2",
