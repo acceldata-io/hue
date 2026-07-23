@@ -77,7 +77,7 @@ class RequirementsGenerator:
             "pymysql==1.1.1",
             "python-dateutil==2.8.2",
             "python-daemon==2.2.4",
-            "python-ldap==3.4.3",
+            "python-ldap==3.4.5",
             "python-oauth2==1.1.0",
             "python-pam==2.0.2",
             "pytidylib==0.3.2",
