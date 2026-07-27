@@ -22,6 +22,7 @@ class RequirementsGenerator:
             "boto-2.49.0",
             "django-axes-5.13.0",
             "django-babel",
+            "djangomako",
             "pysaml2-7.3.1",
         ]
 
@@ -52,7 +53,6 @@ class RequirementsGenerator:
             "django_opentracing==1.1.0",
             "django_prometheus==2.3.1",
             "django-webpack-loader==1.0.0",
-            "djangomako==1.3.2",
             "djangorestframework-simplejwt==5.2.1",
             "djangorestframework==3.15.2",
             "djangosaml2==1.9.3",
