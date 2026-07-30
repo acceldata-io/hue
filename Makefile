@@ -185,8 +185,17 @@ desktop: virtual-env
 ###################################
 relocatable-env:
 	@$(MAKE) virtual-env
-	@echo "--- Running $(SYS_PYTHON) $(RELOCATABLE) $(BLD_DIR_ENV)"
-	@$(ENV_PYTHON) $(RELOCATABLE) $(BLD_DIR_ENV)
+	@RELOCATABLE="$(BLD_DIR_BIN)/virtualenv-make-relocatable"; \
+	if [ ! -x "$$RELOCATABLE" ]; then \
+	  RELOCATABLE="$$(command -v virtualenv-make-relocatable || true)"; \
+	fi; \
+	if [ -z "$$RELOCATABLE" ]; then \
+	  echo "--- virtualenv-make-relocatable not found; installing into the virtual environment"; \
+	  $(ENV_PYTHON) -m pip install virtualenv-make-relocatable==$(VIRTUAL_ENV_RELOCATABLE_VERSION); \
+	  RELOCATABLE="$(BLD_DIR_BIN)/virtualenv-make-relocatable"; \
+	fi; \
+	echo "--- Running $(ENV_PYTHON) $$RELOCATABLE $(BLD_DIR_ENV)"; \
+	$(ENV_PYTHON) "$$RELOCATABLE" $(BLD_DIR_ENV)
 	@echo "--- Setting up pth files $(ENV_PYTHON) $(ROOT)/tools/relocatable.py"
 	@$(ENV_PYTHON) $(ROOT)/tools/relocatable.py
 
