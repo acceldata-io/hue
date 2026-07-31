@@ -22,6 +22,7 @@ class RequirementsGenerator:
             "boto-2.49.0",
             "django-axes-5.13.0",
             "django-babel",
+            "djangomako",
             "pysaml2-7.3.1",
         ]
 
@@ -40,7 +41,7 @@ class RequirementsGenerator:
             "configobj==5.0.9",
             "git+https://github.com/acceldata-io/python-cx_Oracle",
             "django-auth-ldap==4.3.0",
-            "Django==4.1.13",
+            "Django==4.2.30",
             "daphne==3.0.2",
             "django-redis==5.4.0",
             "django-celery-beat==2.6.0",
@@ -52,7 +53,6 @@ class RequirementsGenerator:
             "django_opentracing==1.1.0",
             "django_prometheus==2.3.1",
             "django-webpack-loader==1.0.0",
-            "djangomako==1.3.2",
             "djangorestframework-simplejwt==5.2.1",
             "djangorestframework==3.15.2",
             "djangosaml2==1.9.3",
