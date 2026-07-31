@@ -10,7 +10,10 @@ except ImportError:
     TOKEN_BLOCK = TokenType.BLOCK
 
 from django.utils.translation import trim_whitespace
-from django.utils.encoding import smart_text
+try:
+    from django.utils.encoding import smart_str as smart_text
+except ImportError:  # Django < 4.0
+    from django.utils.encoding import smart_text
 
 try:
     from django.utils.translation.trans_real import (
