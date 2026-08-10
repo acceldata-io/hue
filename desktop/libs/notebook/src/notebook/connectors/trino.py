@@ -308,51 +308,38 @@ class TrinoApi(Api):
   def fetch_result(self, notebook, snippet, rows, start_over):
     data = []
     columns = []
-    next_uri = snippet['result']['handle']['next_uri']
-    row_count = snippet['result']['handle'].get('row_count', 0)
-    rows_remaining = snippet['result']['handle'].get('rows_remaining', 0)
-    status = False
+    handle = snippet['result']['handle']
+    next_uri = handle['next_uri']
+    row_count = handle.get('row_count', 0)
 
-    if row_count == 0:
-      data = snippet['result']['handle']['result']['data']
-
-    while next_uri:
-      try:
-        response = self.trino_request.get(next_uri)
-      except requests.exceptions.RequestException as e:
-        raise TrinoConnectionError("failed to fetch: {}".format(e))
-
-      status = self.trino_request.process(response)
-      data += status.rows
-      columns = status.columns
-
-      if rows_remaining:
-        data = data[-rows_remaining:]  # Trim the data to only include the remaining rows
-        rows_remaining = 0  # Reset rows_remaining since we've handled the trimming
-
-      if len(data) > 100:
-        rows_remaining = len(data) - 100  # no of rows remaining to fetch in the present uri
-        break
-      rows_remaining = 0
-
-      next_uri = status.next_uri
+    # check_status() polls consume Trino's result pages as a side effect, and the rows they
+    # collect are seeded into the handle's result (see _check_status() in notebook/api.py).
+    # For fast queries the whole result lives there and next_uri is already None, so the
+    # seed has to be paged through here: row_count counts the rows already delivered to the
+    # client and the seed is never trimmed, so it doubles as the read offset into it.
+    cached = handle.get('result') or {}
+    cached_data = cached.get('data') or []
+    if row_count < len(cached_data):
+      data = cached_data[row_count:]
+      columns = cached.get('meta') or []
 
     data = data[:100]
+    cached_rows_left = max(0, len(cached_data) - row_count - len(data))
 
     properties = self.trino_session.properties
     self._set_session_info_to_user(properties)
 
     return {
       'row_count': len(data) + row_count,
-      'rows_remaining': rows_remaining,
+      'rows_remaining': cached_rows_left,
       'next_uri': next_uri,
-      'has_more': bool(status.next_uri) if status else False,
+      'has_more': cached_rows_left > 0,
       'data': data or [],
       'meta': [{
         'name': column['name'],
         'type': column['type'],
         'comment': ''
-        } for column in columns] if status else [],
+        } for column in columns] if columns else [],
       'type': 'table'
     }
 

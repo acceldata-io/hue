@@ -247,77 +247,48 @@ class TestTrinoApi(TestCase):
     mock_trino_request = MagicMock()
     self.trino_api.trino_request = mock_trino_request
 
-    # Configure the MagicMock object to return expected responses
-    mock_trino_request.get.return_value = MagicMock()
-    _columns = [{'comment': '', 'name': 'test_column1', 'type': 'str'}, {'comment': '', 'name': 'test_column2', 'type': 'str'}]
+    _meta = [{'name': 'test_column1', 'type': 'str', 'comment': ''}, {'name': 'test_column2', 'type': 'str', 'comment': ''}]
 
-    # Generate more than 100 rows of mock data
+    # Generate more than 100 rows of mock data, seeded into the handle by check_status polls
     mock_data = [[f'value{i}', f'value{i + 1}'] for i in range(1, 201, 1)]
-
-    mock_trino_request.process.side_effect = [
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri='http://url1', id=123,
-        rows=mock_data[:57], columns=_columns
-      ),
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri='http://url2', id=124,
-        rows=mock_data[57:105], columns=_columns
-      ),
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri=None, id=125,
-        rows=mock_data[105:], columns=_columns
-      )
-    ]
 
     # Call the fetch_result method
     result = self.trino_api.fetch_result(
-      notebook={}, snippet={'result': {'handle': {'next_uri': 'http://url', 'result': {'data': []}}}}, rows=0, start_over=False
+      notebook={},
+      snippet={'result': {'handle': {'next_uri': None, 'result': {'data': mock_data, 'meta': _meta, 'type': 'table'}}}},
+      rows=0, start_over=False
     )
 
     expected_result = {
       'row_count': 100,
-      'rows_remaining': 5,
-      'next_uri': 'http://url1',
+      'rows_remaining': 100,
+      'next_uri': None,
       'has_more': True,
       'data': mock_data[:100],
-      'meta': [{
-        'name': column['name'],
-        'type': column['type'],
-        'comment': ''
-        } for column in _columns],
+      'meta': _meta,
       'type': 'table'
     }
 
     assert result == expected_result
     assert len(result['data']) == 100
     assert len(result['meta']) == 2
+    mock_trino_request.get.assert_not_called()
 
   def test_fetch_result_less_than_100(self):
     # Mock TrinoRequest object and its methods
     mock_trino_request = MagicMock()
     self.trino_api.trino_request = mock_trino_request
 
-    # Configure the MagicMock object to return expected responses
-    mock_trino_request.get.return_value = MagicMock()
-    _columns = [{'comment': '', 'name': 'test_column1', 'type': 'str'}, {'comment': '', 'name': 'test_column2', 'type': 'str'}]
+    _meta = [{'name': 'test_column1', 'type': 'str', 'comment': ''}, {'name': 'test_column2', 'type': 'str', 'comment': ''}]
 
-    # Generate 100 rows of mock data
+    # Generate 89 rows of mock data, seeded into the handle by check_status polls
     mock_data = [[f'value{i}', f'value{i + 1}'] for i in range(1, 90, 1)]
-
-    mock_trino_request.process.side_effect = [
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri='http://url1', id=123,
-        rows=mock_data[:57], columns=_columns
-      ),
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri=None, id=124,
-        rows=mock_data[57:], columns=_columns
-      )
-    ]
 
     # Call the fetch_result method
     result = self.trino_api.fetch_result(
-      notebook={}, snippet={'result': {'handle': {'next_uri': 'http://url', 'result': {'data': []}}}}, rows=0, start_over=False
+      notebook={},
+      snippet={'result': {'handle': {'next_uri': None, 'result': {'data': mock_data, 'meta': _meta, 'type': 'table'}}}},
+      rows=0, start_over=False
     )
 
     expected_result = {
@@ -326,17 +297,65 @@ class TestTrinoApi(TestCase):
       'next_uri': None,
       'has_more': False,
       'data': mock_data[:90],
-      'meta': [{
-        'name': column['name'],
-        'type': column['type'],
-        'comment': ''
-        } for column in _columns],
+      'meta': _meta,
       'type': 'table'
     }
 
     assert result == expected_result
     assert len(result['data']) == 89
     assert len(result['meta']) == 2
+    mock_trino_request.get.assert_not_called()
+
+  def test_fetch_result_pages_through_cached_handle_data(self):
+    # For fast queries the check_status() polls drain Trino's next_uri chain before the
+    # first fetch ever runs: next_uri is already None and the whole result only exists in
+    # the handle's seeded result data. fetch_result() must page through that seed using
+    # row_count as the offset instead of returning only the first 100 rows.
+    mock_trino_request = MagicMock()
+    self.trino_api.trino_request = mock_trino_request
+
+    _meta = [{'name': 'test_column1', 'type': 'str', 'comment': ''}, {'name': 'test_column2', 'type': 'str', 'comment': ''}]
+    cached_data = [[f'value{i}', f'value{i + 1}'] for i in range(250)]
+    handle = {
+      'next_uri': None,
+      'row_count': 0,
+      'rows_remaining': 0,
+      'result': {'data': cached_data, 'meta': _meta, 'type': 'table'}
+    }
+
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == cached_data[:100]
+    assert result['row_count'] == 100
+    assert result['rows_remaining'] == 150
+    assert result['next_uri'] is None
+    assert result['has_more']
+    assert result['meta'] == _meta
+
+    # The caller persists row_count back into the handle between fetches
+    handle['row_count'] = result['row_count']
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == cached_data[100:200]
+    assert result['row_count'] == 200
+    assert result['rows_remaining'] == 50
+    assert result['has_more']
+
+    handle['row_count'] = result['row_count']
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == cached_data[200:]
+    assert result['row_count'] == 250
+    assert result['rows_remaining'] == 0
+    assert not result['has_more']
+
+    handle['row_count'] = result['row_count']
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == []
+    assert result['row_count'] == 250
+    assert not result['has_more']
+    mock_trino_request.get.assert_not_called()
 
   def test_get_select_query(self):
     # Test with specified database, table, and column
