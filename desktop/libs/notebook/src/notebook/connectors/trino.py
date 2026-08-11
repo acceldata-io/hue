@@ -151,12 +151,12 @@ class TrinoApi(Api):
       "port": self.server_port,
       "client_session": self.trino_session,
       "http_scheme": self.http_scheme,
-      "auth": self.auth
+      "auth": self.auth,
+      "verify": verify,
     }
 
-    if 'ssl_validate' in self.options:
-      trino_request_options['verify'] = self.options.get('ssl_validate', True)
-
+    if 'ssl_validate' in self.options and not self.options.get('ssl_validate', True):
+      trino_request_options['verify'] = False
     self.trino_request = TrinoRequest(
       **trino_request_options,
     )
