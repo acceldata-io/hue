@@ -50,12 +50,20 @@ def _get_combined_ca_bundle(extra_cert_path):
   so both public CAs and the internal cert validate. Computed once per process."""
   global _COMBINED_CA_BUNDLE
   if _COMBINED_CA_BUNDLE is None:
-    combined_path = '/tmp/hue-trino-ca-bundle.pem'
-    with open(combined_path, 'wb') as out:
+    import os
+    import tempfile
+
+    tmp = tempfile.NamedTemporaryFile(prefix='hue-trino-ca-bundle-', suffix='.pem', delete=False)
+    combined_path = tmp.name
+    try:
+      os.chmod(combined_path, 0o600)
       with open(certifi.where(), 'rb') as f:
-        out.write(f.read())
+        tmp.write(f.read())
       with open(extra_cert_path, 'rb') as f:
-        out.write(f.read())
+        tmp.write(f.read())
+    finally:
+      tmp.close()
+
     _COMBINED_CA_BUNDLE = combined_path
   return _COMBINED_CA_BUNDLE
 
