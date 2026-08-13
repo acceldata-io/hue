@@ -15,11 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import tempfile
 from unittest.mock import MagicMock, Mock, patch
 
+import certifi
 import pytest
 from django.test import TestCase
 
+import notebook.connectors.trino as trino_module
 from desktop.auth.backend import rewrite_user
 from desktop.lib.django_test_util import make_logged_in_client
 from notebook.connectors.trino import TrinoApi
@@ -154,6 +158,22 @@ class TestTrinoApi(TestCase):
     assert result['status'] == 'available'
     assert result['next_uri'] == 'http://url'
 
+  def test_check_status_running(self):
+    mock_trino_request = MagicMock()
+    self.trino_api.trino_request = mock_trino_request
+
+    # Configure the MagicMock object to return a RUNNING state
+    mock_trino_request.get.return_value = MagicMock()
+    mock_trino_request.process.return_value = MagicMock(stats={'state': 'RUNNING'}, next_uri='http://url')
+
+    # Call the check_status method
+    result = self.trino_api.check_status(notebook={}, snippet={'result': {'handle': {'next_uri': 'http://url'}}})
+
+    # A RUNNING query must be reported as 'running', not 'available', otherwise the UI
+    # progress bar shows the query as finished while it's still executing in Trino.
+    assert result['status'] == 'running'
+    assert result['next_uri'] == 'http://url'
+
   def test_execute(self):
     with patch('notebook.connectors.trino.TrinoQuery') as TrinoQuery:
       # Mock TrinoQuery object and its methods
@@ -227,77 +247,48 @@ class TestTrinoApi(TestCase):
     mock_trino_request = MagicMock()
     self.trino_api.trino_request = mock_trino_request
 
-    # Configure the MagicMock object to return expected responses
-    mock_trino_request.get.return_value = MagicMock()
-    _columns = [{'comment': '', 'name': 'test_column1', 'type': 'str'}, {'comment': '', 'name': 'test_column2', 'type': 'str'}]
+    _meta = [{'name': 'test_column1', 'type': 'str', 'comment': ''}, {'name': 'test_column2', 'type': 'str', 'comment': ''}]
 
-    # Generate more than 100 rows of mock data
+    # Generate more than 100 rows of mock data, seeded into the handle by check_status polls
     mock_data = [[f'value{i}', f'value{i + 1}'] for i in range(1, 201, 1)]
-
-    mock_trino_request.process.side_effect = [
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri='http://url1', id=123,
-        rows=mock_data[:57], columns=_columns
-      ),
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri='http://url2', id=124,
-        rows=mock_data[57:105], columns=_columns
-      ),
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri=None, id=125,
-        rows=mock_data[105:], columns=_columns
-      )
-    ]
 
     # Call the fetch_result method
     result = self.trino_api.fetch_result(
-      notebook={}, snippet={'result': {'handle': {'next_uri': 'http://url', 'result': {'data': []}}}}, rows=0, start_over=False
+      notebook={},
+      snippet={'result': {'handle': {'next_uri': None, 'result': {'data': mock_data, 'meta': _meta, 'type': 'table'}}}},
+      rows=0, start_over=False
     )
 
     expected_result = {
       'row_count': 100,
-      'rows_remaining': 5,
-      'next_uri': 'http://url1',
+      'rows_remaining': 100,
+      'next_uri': None,
       'has_more': True,
       'data': mock_data[:100],
-      'meta': [{
-        'name': column['name'],
-        'type': column['type'],
-        'comment': ''
-        } for column in _columns],
+      'meta': _meta,
       'type': 'table'
     }
 
     assert result == expected_result
     assert len(result['data']) == 100
     assert len(result['meta']) == 2
+    mock_trino_request.get.assert_not_called()
 
   def test_fetch_result_less_than_100(self):
     # Mock TrinoRequest object and its methods
     mock_trino_request = MagicMock()
     self.trino_api.trino_request = mock_trino_request
 
-    # Configure the MagicMock object to return expected responses
-    mock_trino_request.get.return_value = MagicMock()
-    _columns = [{'comment': '', 'name': 'test_column1', 'type': 'str'}, {'comment': '', 'name': 'test_column2', 'type': 'str'}]
+    _meta = [{'name': 'test_column1', 'type': 'str', 'comment': ''}, {'name': 'test_column2', 'type': 'str', 'comment': ''}]
 
-    # Generate 100 rows of mock data
+    # Generate 89 rows of mock data, seeded into the handle by check_status polls
     mock_data = [[f'value{i}', f'value{i + 1}'] for i in range(1, 90, 1)]
-
-    mock_trino_request.process.side_effect = [
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri='http://url1', id=123,
-        rows=mock_data[:57], columns=_columns
-      ),
-      MagicMock(
-        stats={'state': 'FINISHED'}, next_uri=None, id=124,
-        rows=mock_data[57:], columns=_columns
-      )
-    ]
 
     # Call the fetch_result method
     result = self.trino_api.fetch_result(
-      notebook={}, snippet={'result': {'handle': {'next_uri': 'http://url', 'result': {'data': []}}}}, rows=0, start_over=False
+      notebook={},
+      snippet={'result': {'handle': {'next_uri': None, 'result': {'data': mock_data, 'meta': _meta, 'type': 'table'}}}},
+      rows=0, start_over=False
     )
 
     expected_result = {
@@ -306,17 +297,65 @@ class TestTrinoApi(TestCase):
       'next_uri': None,
       'has_more': False,
       'data': mock_data[:90],
-      'meta': [{
-        'name': column['name'],
-        'type': column['type'],
-        'comment': ''
-        } for column in _columns],
+      'meta': _meta,
       'type': 'table'
     }
 
     assert result == expected_result
     assert len(result['data']) == 89
     assert len(result['meta']) == 2
+    mock_trino_request.get.assert_not_called()
+
+  def test_fetch_result_pages_through_cached_handle_data(self):
+    # For fast queries the check_status() polls drain Trino's next_uri chain before the
+    # first fetch ever runs: next_uri is already None and the whole result only exists in
+    # the handle's seeded result data. fetch_result() must page through that seed using
+    # row_count as the offset instead of returning only the first 100 rows.
+    mock_trino_request = MagicMock()
+    self.trino_api.trino_request = mock_trino_request
+
+    _meta = [{'name': 'test_column1', 'type': 'str', 'comment': ''}, {'name': 'test_column2', 'type': 'str', 'comment': ''}]
+    cached_data = [[f'value{i}', f'value{i + 1}'] for i in range(250)]
+    handle = {
+      'next_uri': None,
+      'row_count': 0,
+      'rows_remaining': 0,
+      'result': {'data': cached_data, 'meta': _meta, 'type': 'table'}
+    }
+
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == cached_data[:100]
+    assert result['row_count'] == 100
+    assert result['rows_remaining'] == 150
+    assert result['next_uri'] is None
+    assert result['has_more']
+    assert result['meta'] == _meta
+
+    # The caller persists row_count back into the handle between fetches
+    handle['row_count'] = result['row_count']
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == cached_data[100:200]
+    assert result['row_count'] == 200
+    assert result['rows_remaining'] == 50
+    assert result['has_more']
+
+    handle['row_count'] = result['row_count']
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == cached_data[200:]
+    assert result['row_count'] == 250
+    assert result['rows_remaining'] == 0
+    assert not result['has_more']
+
+    handle['row_count'] = result['row_count']
+    result = self.trino_api.fetch_result(notebook={}, snippet={'result': {'handle': handle}}, rows=100, start_over=False)
+
+    assert result['data'] == []
+    assert result['row_count'] == 250
+    assert not result['has_more']
+    mock_trino_request.get.assert_not_called()
 
   def test_get_select_query(self):
     # Test with specified database, table, and column
@@ -416,6 +455,18 @@ class TestTrinoApi(TestCase):
       trino_api = TrinoApi(self.user, interpreter=interpreter)
       assert trino_api.auth_password == 'custom_password_script'
 
+  def test_cancel(self):
+    with patch('notebook.connectors.trino.TrinoApi.close_statement') as close_statement:
+      close_statement.return_value = {'status': 0}
+
+      notebook = {}
+      snippet = {'result': {'handle': {'next_uri': 'http://url'}}}
+      result = self.trino_api.cancel(notebook, snippet)
+
+      # cancel() delegates to close_statement(), which already does the right DELETE on next_uri.
+      close_statement.assert_called_once_with(notebook, snippet)
+      assert result == {'status': 0}
+
   def test_get_log(self):
     notebook = {}
     snippet = {
@@ -454,3 +505,69 @@ class TestTrinoApi(TestCase):
           Log_error.assert_called_once_with(
             "Failed to fetch schemas from catalog catalog2: Some error"
           )
+
+  def test_init_verify_defaults_to_true_without_ssl_cert_path(self):
+    with patch('notebook.connectors.trino.TrinoRequest') as MockTrinoRequest:
+      TrinoApi(self.user, interpreter=self.interpreter)
+
+      _, kwargs = MockTrinoRequest.call_args
+      assert kwargs['verify'] is True
+
+  def test_init_verify_uses_combined_ca_bundle_with_ssl_cert_path(self):
+    interpreter = {
+      'options': {
+        'url': 'https://example.com:8080',
+        'ssl_cert_path': '/path/to/cert.pem'
+      },
+      'name': 'trino'
+    }
+    with patch('notebook.connectors.trino.TrinoRequest') as MockTrinoRequest:
+      with patch('notebook.connectors.trino._get_combined_ca_bundle', return_value='/tmp/combined-bundle.pem') as get_bundle:
+        TrinoApi(self.user, interpreter=interpreter)
+
+        get_bundle.assert_called_once_with('/path/to/cert.pem')
+        _, kwargs = MockTrinoRequest.call_args
+        assert kwargs['verify'] == '/tmp/combined-bundle.pem'
+
+  def test_get_combined_ca_bundle_merges_certifi_and_extra_cert(self):
+    trino_module._COMBINED_CA_BUNDLE = None
+    extra_cert_file = tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False)
+    try:
+      extra_cert_file.write('-----BEGIN CERTIFICATE-----\nEXTRA-TEST-CERT\n-----END CERTIFICATE-----\n')
+      extra_cert_file.close()
+
+      combined_path = trino_module._get_combined_ca_bundle(extra_cert_file.name)
+
+      with open(combined_path) as f:
+        combined_content = f.read()
+      with open(certifi.where()) as f:
+        certifi_content = f.read()
+
+      # The combined bundle must contain BOTH the standard/public CA bundle and the custom
+      # cert, so other HTTPS calls Hue makes still validate against public CAs normally.
+      assert certifi_content in combined_content
+      assert 'EXTRA-TEST-CERT' in combined_content
+    finally:
+      os.remove(extra_cert_file.name)
+      if os.path.exists(trino_module._COMBINED_CA_BUNDLE or ''):
+        os.remove(trino_module._COMBINED_CA_BUNDLE)
+      trino_module._COMBINED_CA_BUNDLE = None
+
+  def test_get_combined_ca_bundle_is_cached_after_first_call(self):
+    trino_module._COMBINED_CA_BUNDLE = None
+    first_cert_file = tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False)
+    try:
+      first_cert_file.write('cert-a')
+      first_cert_file.close()
+
+      first_result = trino_module._get_combined_ca_bundle(first_cert_file.name)
+      # A second call, even with a different (nonexistent) path, must return the cached
+      # result rather than trying to read it - the bundle is only computed once per process.
+      second_result = trino_module._get_combined_ca_bundle('/nonexistent/path/should-not-be-opened.pem')
+
+      assert first_result == second_result
+    finally:
+      os.remove(first_cert_file.name)
+      if os.path.exists(trino_module._COMBINED_CA_BUNDLE or ''):
+        os.remove(trino_module._COMBINED_CA_BUNDLE)
+      trino_module._COMBINED_CA_BUNDLE = None
