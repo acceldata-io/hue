@@ -158,7 +158,13 @@ $(BLD_DIR_ENV)/bin/python:
 	@echo "--- Creating virtual environment for $(PYTHON_VER) ---"
 	@mkdir -p $(BLD_DIR_ENV)
 	@$(SYS_PYTHON) -m ensurepip --upgrade
-	@$(SYS_PYTHON) -m pip install --upgrade pip==$(PIP_VERSION)
+	@cur=$$($(SYS_PYTHON) -m pip --version | cut -d' ' -f2); \
+	 want="$(PIP_VERSION)"; \
+	 if [ "$$(printf '%s\n%s\n' "$$want" "$$cur" | sort -V | head -1)" = "$$want" ]; then \
+	   echo "pip $$cur >= $$want, skipping"; \
+	 else \
+	   $(SYS_PYTHON) -m pip install --upgrade "pip==$(PIP_VERSION)"; \
+	 fi
 	@$(SYS_PYTHON) -m pip install virtualenv==$(VIRTUAL_ENV_VERSION) virtualenv-make-relocatable==$(VIRTUAL_ENV_RELOCATABLE_VERSION)
 	@$(SYS_PYTHON) -m virtualenv --copies -p $(PYTHON_VER) $(BLD_DIR_ENV)
 	@$(ENV_PYTHON) -m pip install virtualenv==$(VIRTUAL_ENV_VERSION) virtualenv-make-relocatable==$(VIRTUAL_ENV_RELOCATABLE_VERSION)
