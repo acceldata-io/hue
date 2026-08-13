@@ -21,15 +21,17 @@ import logging
 import textwrap
 from urllib.parse import urlparse
 
+import certifi
 import requests
 from django.utils.translation import gettext as _
-from trino.auth import BasicAuthentication
+from trino.auth import BasicAuthentication, GSSAPIAuthentication
 from trino.client import ClientSession, TrinoQuery, TrinoRequest
 from trino.exceptions import TrinoConnectionError
 
 from beeswax import conf, data_export
 from desktop.auth.backend import rewrite_user
 from desktop.conf import AUTH_PASSWORD as DEFAULT_AUTH_PASSWORD, AUTH_USERNAME as DEFAULT_AUTH_USERNAME
+from desktop.conf import KERBEROS
 from desktop.lib import export_csvxls
 from desktop.lib.conf import coerce_password_from_script
 from desktop.lib.i18n import force_unicode
@@ -39,6 +41,31 @@ from notebook.connectors.base import Api, ExecutionWrapper, QueryError, ResultWr
 
 LOG = logging.getLogger()
 SESSION_KEY = '%(username)s-%(interpreter_name)s'
+
+_COMBINED_CA_BUNDLE = None
+
+
+def _get_combined_ca_bundle(extra_cert_path):
+  """Merge the system/certifi CA bundle with a custom (e.g. self-signed) cert
+  so both public CAs and the internal cert validate. Computed once per process."""
+  global _COMBINED_CA_BUNDLE
+  if _COMBINED_CA_BUNDLE is None:
+    import os
+    import tempfile
+
+    tmp = tempfile.NamedTemporaryFile(prefix='hue-trino-ca-bundle-', suffix='.pem', delete=False)
+    combined_path = tmp.name
+    try:
+      os.chmod(combined_path, 0o600)
+      with open(certifi.where(), 'rb') as f:
+        tmp.write(f.read())
+      with open(extra_cert_path, 'rb') as f:
+        tmp.write(f.read())
+    finally:
+      tmp.close()
+
+    _COMBINED_CA_BUNDLE = combined_path
+  return _COMBINED_CA_BUNDLE
 
 
 def query_error_handler(func):
@@ -61,26 +88,77 @@ def query_error_handler(func):
 class TrinoApi(Api):
   def __init__(self, user, interpreter=None):
     Api.__init__(self, user, interpreter=interpreter)
+    if interpreter is None:
+      raise ValueError("Interpreter is required to initialize Trino.")
+
     self.options = interpreter['options']
     self.server_host, self.server_port, self.http_scheme = self.parse_api_url(self.options.get('url'))
     self.auth = None
 
     auth_username = self.options.get('auth_username', DEFAULT_AUTH_USERNAME.get())
     auth_password = self.options.get('auth_password', self.get_auth_password())
+    gssapi_enabled = self.options.get('security_enabled', False)
 
-    if auth_username and auth_password:
+    if (auth_username and auth_password) and gssapi_enabled:
+      raise ValueError(
+        "Basic Authentication and GSSAPI/Kerberos authentication cannot be used at the same time. Check your Trino server configuration."
+      )
+
+    elif auth_username and auth_password:
       self.auth_username = auth_username
       self.auth_password = auth_password
       self.auth = BasicAuthentication(self.auth_username, self.auth_password)
 
+    elif gssapi_enabled:
+      if self.http_scheme != "https":
+        LOG.error("GSSAPI/Kerberos authentication requires HTTPS. Check your Trino server configuration.")
+
+      gssapi_options = {
+        'service_name': self.options.get('kerberos_service_name', 'HTTP'),
+        'hostname_override': self.options.get('hostname_override', self.server_host),
+        'principal': self.options.get('kerberos_principal', KERBEROS.HUE_PRINCIPAL.get()),
+        'force_preemptive': self.options.get('force_preemptive'),
+        'delegate': self.options.get('delegate'),
+        'ca_bundle': self.options.get('cacert'),
+        'config': self.options.get('krb5_config'),
+      }
+      MUTUAL_AUTH_MODES = {'REQUIRED': 1, 'OPTIONAL': 2, 'DISABLED': 3}
+      mutual = self.options.get('mutual_authentication', KERBEROS.MUTUAL_AUTHENTICATION.get())
+
+      # This is expected to be an integer eventually, either 1, 2, or 3. Getting it from Hue
+      # gives us an uppercase string instead, so convert to the corresponding int.
+      if not isinstance(mutual, int):
+        mutual = MUTUAL_AUTH_MODES.get(str(mutual).upper(), MUTUAL_AUTH_MODES['OPTIONAL'])
+
+      gssapi_options['mutual_authentication'] = mutual
+
+      # Only include key value pairs that are not None. This way, the user can override the defaults if
+      # necessary.
+      self.auth = GSSAPIAuthentication(
+        **{k: v for k, v in gssapi_options.items() if v is not None},
+      )
+
+    ssl_cert_path = self.options.get('ssl_cert_path')
+    verify = _get_combined_ca_bundle(ssl_cert_path) if ssl_cert_path else True
+
     self.session_info = self.create_session()
+
     self.trino_session = ClientSession(self.user.username, properties=self.session_info['properties'])
+    # By separating the request options from the session, we can do things like
+    # conditionally disable ssl validation (useful for testing)
+    trino_request_options = {
+      "host": self.server_host,
+      "port": self.server_port,
+      "client_session": self.trino_session,
+      "http_scheme": self.http_scheme,
+      "auth": self.auth,
+      "verify": verify,
+    }
+
+    if 'ssl_validate' in self.options and not self.options.get('ssl_validate', True):
+      trino_request_options['verify'] = False
     self.trino_request = TrinoRequest(
-      host=self.server_host,
-      port=self.server_port,
-      client_session=self.trino_session,
-      http_scheme=self.http_scheme,
-      auth=self.auth
+      **trino_request_options,
     )
 
   def get_auth_password(self):
@@ -207,63 +285,69 @@ class TrinoApi(Api):
       if _status.stats['state'] == 'QUEUED':
         status = 'waiting'
       elif _status.stats['state'] == 'RUNNING':
-        status = 'available'  # need to verify
+        status = 'running'
       else:
         status = 'available'
 
+      # This poll's GET already consumed next_uri, and Trino only serves a given next_uri's
+      # row data once. Any rows piggybacked on this response have to be surfaced in the
+      # response itself (not just remembered locally) since the caller -- notebook/api.py --
+      # persists this into the snippet's handle so fetch_result() can pick it up even if it
+      # runs on a different worker process than this poll did.
+      if _status.rows:
+        response['result'] = {
+          'has_more': _status.next_uri is not None,
+          'data': _status.rows,
+          'meta': [{
+              'name': col['name'],
+              'type': col['type'],
+              'comment': ''
+            }
+            for col in _status.columns
+          ] if _status.columns else [],
+          'type': 'table'
+        }
+
     response['status'] = status
-    response['next_uri'] = _status.next_uri if status != 'available' else next_uri
+    response['next_uri'] = _status.next_uri if next_uri is not None else next_uri
     return response
 
   @query_error_handler
   def fetch_result(self, notebook, snippet, rows, start_over):
     data = []
     columns = []
-    next_uri = snippet['result']['handle']['next_uri']
-    row_count = snippet['result']['handle'].get('row_count', 0)
-    rows_remaining = snippet['result']['handle'].get('rows_remaining', 0)
-    status = False
+    handle = snippet['result']['handle']
+    next_uri = handle['next_uri']
+    row_count = handle.get('row_count', 0)
 
-    if row_count == 0:
-      data = snippet['result']['handle']['result']['data']
-
-    while next_uri:
-      try:
-        response = self.trino_request.get(next_uri)
-      except requests.exceptions.RequestException as e:
-        raise TrinoConnectionError("failed to fetch: {}".format(e))
-
-      status = self.trino_request.process(response)
-      data += status.rows
-      columns = status.columns
-
-      if rows_remaining:
-        data = data[-rows_remaining:]  # Trim the data to only include the remaining rows
-        rows_remaining = 0  # Reset rows_remaining since we've handled the trimming
-
-      if len(data) > 100:
-        rows_remaining = len(data) - 100  # no of rows remaining to fetch in the present uri
-        break
-      rows_remaining = 0
-
-      next_uri = status.next_uri
+    # check_status() polls consume Trino's result pages as a side effect, and the rows they
+    # collect are seeded into the handle's result (see _check_status() in notebook/api.py).
+    # For fast queries the whole result lives there and next_uri is already None, so the
+    # seed has to be paged through here: row_count counts the rows already delivered to the
+    # client and the seed is never trimmed, so it doubles as the read offset into it.
+    cached = handle.get('result') or {}
+    cached_data = cached.get('data') or []
+    if row_count < len(cached_data):
+      data = cached_data[row_count:]
+      columns = cached.get('meta') or []
 
     data = data[:100]
+    cached_rows_left = max(0, len(cached_data) - row_count - len(data))
 
     properties = self.trino_session.properties
     self._set_session_info_to_user(properties)
 
     return {
       'row_count': len(data) + row_count,
-      'rows_remaining': rows_remaining,
+      'rows_remaining': cached_rows_left,
       'next_uri': next_uri,
-      'has_more': bool(status.next_uri) if status else False,
+      'has_more': cached_rows_left > 0,
       'data': data or [],
       'meta': [{
         'name': column['name'],
         'type': column['type'],
         'comment': ''
-        } for column in columns] if status else [],
+        } for column in columns] if columns else [],
       'type': 'table'
     }
 
@@ -323,6 +407,10 @@ class TrinoApi(Api):
       })
 
     return statement
+
+  @query_error_handler
+  def cancel(self, notebook, snippet):
+    return self.close_statement(notebook, snippet)
 
   def close_statement(self, notebook, snippet):
     try:
