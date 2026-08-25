@@ -30,7 +30,7 @@ class RequirementsGenerator:
             "requests-gssapi==1.2.3",
             "asn1crypto==0.24.0",
             "avro-python3==1.8.2",
-            "Babel==2.9.1",
+            "Babel==2.16.0",
             "boto3>=1.35,<2",
             "cbor2==5.8.0",
             "celery[redis]==5.5.0",
