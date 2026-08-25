@@ -20,6 +20,7 @@ class RequirementsGenerator:
     def __init__(self):
         self.local_requirements = [
             "django-axes-5.13.0",
+            "git+https://github.com/Zegocover/enmerkar",  # django-babel fork
             "pysaml2-7.3.1",
         ]
 
@@ -38,7 +39,6 @@ class RequirementsGenerator:
             "channels-redis==4.3.0",
             "configobj==5.0.9",
             "git+https://github.com/acceldata-io/python-cx_Oracle",
-            "git+https://github.com/Zegocover/enmerkar",  # django-babel fork
             "django-auth-ldap==4.3.0",
             "Django==4.2.25",
             "daphne==4.2.2",
