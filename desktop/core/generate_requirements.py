@@ -20,7 +20,7 @@ class RequirementsGenerator:
     def __init__(self):
         self.local_requirements = [
             "django-axes-5.13.0",
-            "git+https://github.com/Zegocover/enmerkar",  # django-babel fork
+            "django-babel",
             "pysaml2-7.3.1",
         ]
 
@@ -30,7 +30,7 @@ class RequirementsGenerator:
             "requests-gssapi==1.2.3",
             "asn1crypto==0.24.0",
             "avro-python3==1.8.2",
-            "Babel==2.14.0",
+            "Babel==2.9.1",
             "boto3>=1.35,<2",
             "cbor2==5.8.0",
             "celery[redis]==5.5.0",
