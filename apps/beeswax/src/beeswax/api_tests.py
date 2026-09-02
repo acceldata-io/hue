@@ -56,6 +56,14 @@ class TestApi():
         'error': "HTTPSConnectionPool(host='gethue.com', port=10001): Read timed out. (read timeout=120)"
       })
 
+  def test_autocomplete_empty_database_name(self):
+    db = Mock()
+
+    resp = _autocomplete(db, database="")
+
+    assert resp == {"code": 400, "error": "Database name is missing"}
+    assert not db.get_tables_meta.called
+
   def test_get_functions(self):
     db = Mock(
       get_functions=Mock(
