@@ -83,7 +83,6 @@ class RequirementsGenerator:
             "python-pam==2.0.2",
             "pytidylib==0.3.2",
             "pytz==2025.1",
-            "PyJWT==2.12.0",
             "PyYAML==6.0.2",
             "requests==2.32.3",
             "requests-kerberos==0.14.0",
@@ -98,7 +97,6 @@ class RequirementsGenerator:
             "trino==0.329.0",
             "thrift==0.24.0",
             "thrift-sasl==0.4.3",
-            "urllib3==2.7.0",
             "django-utils-six==2.0",
             "six==1.16.0",
             "psutil==6.0.0",
@@ -113,7 +111,9 @@ class RequirementsGenerator:
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/pandas-1.4.3-cp38-cp38-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/lxml-4.6.4-cp38-cp38-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
                 "PyYAML==5.4.1",
-                "Markdown==3.1",
+                "Markdown==3.7",
+                "PyJWT==2.10.0",
+                "urllib3==2.6.3",
             ],
             "3.9": [
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/cryptography-41.0.1-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
@@ -121,7 +121,9 @@ class RequirementsGenerator:
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/pandas-1.4.3-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
                 "http://ibm-ppc-builds.s3.amazonaws.com/silx-py-libs/lxml-4.6.4-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl",
                 "PyYAML==6.0.1",
-                "Markdown==3.8.1",
+                "Markdown==3.9",
+                "PyJWT==2.12.0",
+                "urllib3==2.6.3",
             ]
         }
         self.x86_64_requirements = {
@@ -131,7 +133,9 @@ class RequirementsGenerator:
                 "pandas==2.0.3",
                 "lxml==4.9.1",
                 "sasl==0.3.1",
-                "Markdown==3.1",
+                "Markdown==3.7",
+                "PyJWT==2.10.0",
+                "urllib3==2.6.3",
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
             "3.9": [
@@ -140,7 +144,9 @@ class RequirementsGenerator:
                 "pandas==2.0.3",
                 "lxml==4.9.1",
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
-                "Markdown==3.8.1",
+                "Markdown==3.9",
+                "PyJWT==2.12.0",
+                "urllib3==2.6.3",
                 "decorator==5.1.1",
             ],
             "3.11": [
@@ -150,7 +156,9 @@ class RequirementsGenerator:
                 "lxml==4.9.1",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
-                "Markdown==3.8.1",
+                "Markdown==3.10.3",
+                "PyJWT==2.12.0",
+                "urllib3==2.7.0",
             ],
             "3.12": [
                 "cryptography==44.0.1",
@@ -167,7 +175,9 @@ class RequirementsGenerator:
                 "lxml==6.1.1",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
-                "Markdown==3.8",
+                "Markdown==3.10.3",
+                "PyJWT==2.12.0",
+                "urllib3==2.7.0",
             ],
         }
         self.aarch64_requirements = {
@@ -176,7 +186,9 @@ class RequirementsGenerator:
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
-                "Markdown==3.1",
+                "Markdown==3.7",
+                "PyJWT==2.10.0",
+                "urllib3==2.6.3",
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
             "3.9": [
@@ -184,7 +196,9 @@ class RequirementsGenerator:
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
-                "Markdown==3.8.1",
+                "Markdown==3.9",
+                "PyJWT==2.12.0",
+                "urllib3==2.6.3",
                 "decorator==5.1.1",
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
@@ -195,7 +209,9 @@ class RequirementsGenerator:
                 "lxml==4.9.1",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
-                "Markdown==3.8.1"
+                "Markdown==3.10.3",
+                "PyJWT==2.12.0",
+                "urllib3==2.7.0",
             ],
             "3.12": [
                 "cryptography==44.0.1",
@@ -212,7 +228,9 @@ class RequirementsGenerator:
                 "lxml==6.1.1",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
-                "Markdown==3.8",
+                "Markdown==3.10.3",
+                "PyJWT==2.12.0",
+                "urllib3==2.7.0",
             ],
         }
         self.arch_requirements_map = {
