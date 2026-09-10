@@ -126,7 +126,7 @@ class RequirementsGenerator:
         }
         self.x86_64_requirements = {
             "default": [
-                "cryptography==44.0.1",
+                "cryptography==50.0.1",
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
@@ -144,7 +144,7 @@ class RequirementsGenerator:
                 "decorator==5.1.1",
             ],
             "3.11": [
-                "cryptography==44.0.1",
+                "cryptography==50.0.1",
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
@@ -161,7 +161,7 @@ class RequirementsGenerator:
                 "pure-sasl==0.6.2",
                 "Markdown==3.8.1",
             "3.14": [
-                "cryptography==49.0.0",
+                "cryptography==50.0.1",
                 "numpy==2.2.6",
                 "pandas==2.3.3",
                 "lxml==6.1.1",
@@ -172,7 +172,7 @@ class RequirementsGenerator:
         }
         self.aarch64_requirements = {
             "default": [
-                "cryptography==44.0.1",
+                "cryptography==50.0.1",
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
@@ -189,7 +189,7 @@ class RequirementsGenerator:
                 "git+https://github.com/acceldata-io/python-sasl.git@ce924e9452681363b28157146621ee7a9918c81e",
             ],
             "3.11": [
-                "cryptography==44.0.1",
+                "cryptography==50.0.1",
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
@@ -206,7 +206,7 @@ class RequirementsGenerator:
                 "pure-sasl==0.6.2",
                 "Markdown==3.8.1"
             "3.14": [
-                "cryptography==49.0.0",
+                "cryptography==50.0.1",
                 "numpy==2.2.6",
                 "pandas==2.3.3",
                 "lxml==6.1.1",
