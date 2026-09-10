@@ -91,7 +91,7 @@ class RequirementsGenerator:
             "ruff==0.9.0",
             "slack-sdk==3.31.0",
             "SQLAlchemy==1.4.54",
-            "sqlparse==0.5.0",
+            "sqlparse==0.5.4",
             "tablib==3.8.0",
             "tabulate==0.9.0",
             "trino==0.329.0",
