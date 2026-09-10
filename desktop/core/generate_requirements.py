@@ -82,7 +82,7 @@ class RequirementsGenerator:
             "python-pam==2.0.2",
             "pytidylib==0.3.2",
             "pytz==2025.1",
-            "PyJWT==2.10.0",
+            "PyJWT==2.12.0",
             "PyYAML==6.0.2",
             "requests==2.32.3",
             "requests-kerberos==0.14.0",
