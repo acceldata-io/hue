@@ -95,7 +95,7 @@ class RequirementsGenerator:
             "tablib==3.8.0",
             "tabulate==0.9.0",
             "trino==0.329.0",
-            "git+https://github.com/gethue/thrift.git",
+            "thrift==0.24.0",
             "thrift-sasl==0.4.3",
             "urllib3==2.7.0",
             "django-utils-six==2.0",
