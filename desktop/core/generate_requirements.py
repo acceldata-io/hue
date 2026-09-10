@@ -40,7 +40,7 @@ class RequirementsGenerator:
             "configobj==5.0.9",
             "git+https://github.com/acceldata-io/python-cx_Oracle",
             "django-auth-ldap==4.3.0",
-            "Django==4.2.25",
+            "Django==4.2.30",
             "daphne==4.2.2",
             "django-redis==5.4.0",
             "django-celery-beat==2.8.0",
