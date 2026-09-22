@@ -78,7 +78,10 @@ release:
 	@echo "--- Preparing general distribution tree at $@"
 	@rm -rf $(BLD_DIR_PROD) $(BLD_DIR_PROD_TGZ)
 	@mkdir -p $(BLD_DIR_PROD)
-	@tar --exclude="build/release" -chf - $(PROD_INCLUDES) | tar -C $(BLD_DIR_PROD) -xf -
+	# Do not pass -h (--dereference). That follows env/bin/python* into the
+	# toolchain ELF and ships a $ORIGIN-rpath copy that dies after relocate.
+	# Distro python3.11 survived that copy; python3.14 does not.
+	@tar --exclude="build/release" -cf - $(PROD_INCLUDES) | tar -C $(BLD_DIR_PROD) -xf -
 
 	@echo "---- Removing exclusions"
 	@for i in $(PROD_EXCLUDES) ; do rm -rf $(BLD_DIR_PROD)/$$i ; done
@@ -97,7 +100,7 @@ release:
 	@$(call STRIP_DEV, $(ROOT)/Makefile.vars.priv, $(BLD_DIR_PROD)/Makefile.vars.priv)
 	@$(call STRIP_DEV, $(APPS_DIR)/Makefile, $(BLD_DIR_PROD)/apps/Makefile)
 	@$(call STRIP_DEV, $(DESKTOP_DIR)/Makefile, $(BLD_DIR_PROD)/desktop/Makefile)
-	@tar --exclude="build/release" -C $(BLD_DIR_PROD)/.. -chzf $(BLD_DIR_PROD_TGZ) hue-$(DESKTOP_VERSION)
+	@tar --exclude="build/release" -C $(BLD_DIR_PROD)/.. -czf $(BLD_DIR_PROD_TGZ) hue-$(DESKTOP_VERSION)
 	@echo "---- $(BLD_DIR_PROD_TGZ)"
 
 # Make a tarball

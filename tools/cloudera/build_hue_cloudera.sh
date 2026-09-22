@@ -40,6 +40,7 @@ HUE_JAR_VERSION=$3
 PYTHON38_OSES=("centos7" "redhat8" "sles12" "ubuntu20" "ubuntu22")
 PYTHON39_OSES=("redhat8" "redhat8-arm64" "redhat9")
 PYTHON311_OSES=("redhat8" "redhat8-arm64" "redhat9" "sles15" "ubuntu22")
+PYTHON314_OSES=("redhat8" "redhat8-arm64" "redhat9" "sles15" "ubuntu22")
 
 LATEST_PYTHON="python3.14"
 PYTHON_VERSIONS=("python3.14" "python3.11" "python3.9" "python3.8")
@@ -47,6 +48,7 @@ PYTHON_VERSIONS=("python3.14" "python3.11" "python3.9" "python3.8")
 export REQ_PYTHON38="3.8.12"
 export REQ_PYTHON39="3.9.16"
 export REQ_PYTHON311="3.11.12"
+export REQ_PYTHON314="3.14.0"
 
 export DESKTOP_VERSION=$DOCKEROS
 export HUE_WEBPACK_CONFIG='webpack.config.internal.js'
@@ -80,13 +82,28 @@ setup_python_env() {
         fi
       fi
       ;;
-    python3.14)
+    python3.11)
       if is_supported_os PYTHON311_OSES "$os"; then
         export PYTHON311_PATH=${PYTHON311_PATH:=/opt/python/3.11.12}
-        if is_supported_python_version "$PYTHON311_PATH/bin/python3.14" $REQ_PYTHON311; then
+        if is_supported_python_version "$PYTHON311_PATH/bin/python3.11" $REQ_PYTHON311; then
           export PATH="$PYTHON311_PATH/bin:$PATH"
         else
           unset PYTHON311_PATH
+        fi
+      fi
+      ;;
+    python3.14)
+      if is_supported_os PYTHON314_OSES "$os"; then
+        # Prefer the portable /usr/bin name; fall back to the ODP toolchain.
+        if [ -x /usr/bin/python3.14 ]; then
+          export PYTHON314_PATH=${PYTHON314_PATH:=/usr}
+        else
+          export PYTHON314_PATH=${PYTHON314_PATH:=/opt/pythons/python3.14}
+        fi
+        if is_supported_python_version "$PYTHON314_PATH/bin/python3.14" $REQ_PYTHON314; then
+          export PATH="$PYTHON314_PATH/bin:$PATH"
+        else
+          unset PYTHON314_PATH
         fi
       fi
       ;;
@@ -119,6 +136,10 @@ should_build_python() {
 
   case "$ver" in
     python3.14)
+      is_supported_os PYTHON314_OSES "$os"
+      return $?
+      ;;
+    python3.11)
       is_supported_os PYTHON311_OSES "$os"
       return $?
       ;;
@@ -158,7 +179,7 @@ for PYTHON_VER in "${PYTHON_VERSIONS[@]}"; do
     echo "BLD_DIR_ENV=${BLD_DIR_ENV}"
 
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ORACLE_INSTANTCLIENT19_PATH}
-    export PATH=$PYTHON38_PATH/bin:$PYTHON39_PATH/bin:$PYTHON311_PATH/bin:/opt/sqlite3/bin:/usr/bin:$THISPATH
+    export PATH=$PYTHON38_PATH/bin:$PYTHON39_PATH/bin:$PYTHON311_PATH/bin:$PYTHON314_PATH/bin:/opt/sqlite3/bin:/usr/bin:$THISPATH
 
     big_console_header "Hue Build Start for" "$PYTHON_VER" "$@"
     BLD_DIR_ENV="$BLD_DIR_ENV" PYTHON_VER="$PYTHON_VER" make apps docs
