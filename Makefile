@@ -195,6 +195,14 @@ relocatable-env:
 	@$(ENV_PYTHON) $(RELOCATABLE) $(BLD_DIR_ENV)
 	@echo "--- Setting up pth files $(ENV_PYTHON) $(ROOT)/tools/relocatable.py"
 	@$(ENV_PYTHON) $(ROOT)/tools/relocatable.py
+	# virtualenv-make-relocatable copies the CPython ELF into env/bin.
+	# /opt/pythons python3.14 has RPATH $$ORIGIN/../lib, so that copy is
+	# unloadable after relocate. Distro python3.11 had no RPATH and
+	# survived. Always link to /usr/bin/$(PYTHON_VER) — never $(SYS_PYTHON)
+	# — so the tarball does not embed the build-host toolchain path.
+	@ln -sfn /usr/bin/$(PYTHON_VER) $(BLD_DIR_BIN)/python
+	@ln -sfn python $(BLD_DIR_BIN)/python3
+	@ln -sfn python $(BLD_DIR_BIN)/$(PYTHON_VER)
 
 ###################################
 # Build apps
