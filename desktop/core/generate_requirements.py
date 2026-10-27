@@ -151,6 +151,15 @@ class RequirementsGenerator:
                 "pure-sasl==0.6.2",
                 "Markdown==3.8.1",
             ],
+            "3.12": [
+                "cryptography==44.0.1",
+                "numpy==1.26.4",
+                "pandas==2.2.2",
+                "lxml==5.2.2",
+                "async-timeout==5.0.1",
+                "pure-sasl==0.6.2",
+                "Markdown==3.8.1",
+            ],
         }
         self.aarch64_requirements = {
             "default": [
@@ -175,6 +184,15 @@ class RequirementsGenerator:
                 "numpy==1.24.4",
                 "pandas==2.0.3",
                 "lxml==4.9.1",
+                "async-timeout==5.0.1",
+                "pure-sasl==0.6.2",
+                "Markdown==3.8.1"
+            ],
+            "3.12": [
+                "cryptography==44.0.1",
+                "numpy==1.26.4",
+                "pandas==2.2.2",
+                "lxml==5.2.2",
                 "async-timeout==5.0.1",
                 "pure-sasl==0.6.2",
                 "Markdown==3.8.1"
