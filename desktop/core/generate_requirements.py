@@ -21,7 +21,6 @@ class RequirementsGenerator:
         self.local_requirements = [
             "django-axes-5.13.0",
             "django-babel",
-            "djangomako",
             "pysaml2-7.3.1",
         ]
 
@@ -67,7 +66,7 @@ class RequirementsGenerator:
             "kazoo==2.8.0",
             "kerberos==1.3.0",
             "kubernetes==31.0.0",
-            "Mako==1.3.12",
+            "Mako==1.2.3",
             "openpyxl==3.1.5",
             "phoenixdb==1.2.1",
             "prompt-toolkit==3.0.48",
