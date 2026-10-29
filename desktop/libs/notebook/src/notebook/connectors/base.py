@@ -32,7 +32,7 @@ from desktop.lib import export_csvxls
 from desktop.lib.exceptions_renderable import PopupException
 from desktop.lib.i18n import smart_str
 from metadata.optimizer.base import get_api as get_optimizer_api
-from notebook.conf import get_ordered_interpreters
+from notebook.conf import ENABLE_CUSTOM_CONNECTORS, get_ordered_interpreters
 from notebook.sql_utils import get_current_statement
 
 LOG = logging.getLogger()
@@ -416,7 +416,14 @@ def patch_snippet_for_connector(snippet, user=None):
     snippet['dialect'] = snippet['type']
 
 
-def get_api(request, snippet):
+def get_api(request, snippet, allow_custom_connector=False):
+  """
+  Returns the API of the connector of a snippet.
+
+  :param allow_custom_connector: Only for the server side code that builds a 'custom' snippet itself. A snippet of
+    'custom' type received from a client lets that client choose the interface and its options, so it is only
+    accepted when [notebook] enable_custom_connectors is on.
+  """
   from notebook.connectors.oozie_batch import OozieApi
 
   if snippet.get('wasBatchExecuted') and not TASK_SERVER.ENABLED.get():
@@ -444,6 +451,10 @@ def get_api(request, snippet):
 
   # reconstruct 'custom' interpreter.
   if snippet.get('type') and snippet.get('type') == 'custom':
+    if not (allow_custom_connector or ENABLE_CUSTOM_CONNECTORS.get()):
+      raise PopupException(
+        _('Custom connectors are not enabled. An administrator can enable them with [notebook] enable_custom_connectors.')
+      )
     interface = snippet.get('interface')
     interpreter['options'] = snippet.get('options')
 
