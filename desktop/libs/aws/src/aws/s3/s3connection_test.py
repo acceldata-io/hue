@@ -47,7 +47,7 @@ class TestRazS3Connection():
   def test_get_signed_url_delegates_to_raz_client(self):
     with patch('aws.s3.s3connection.S3RazClient') as S3RazClient:
       S3RazClient.return_value.get_url.return_value = {
-        'AWSAccessKeyId': 'AKIA23E77ZX2HVY76YGL',
+        'AWSAccessKeyId': 'AKIA123REDACTED',
         'Signature': '3lhK%2BwtQ9Q2u5VDIqb4MEpoY3X4%3D',
         'Expires': '1617207304'
       }
@@ -56,5 +56,7 @@ class TestRazS3Connection():
       result = client.get_signed_url(action='GET', url='https://s3-us-west-1.amazonaws.com/', headers={}, data='')
 
       S3RazClient.assert_called_once_with(username='test')
-      S3RazClient.return_value.get_url.assert_called_once_with('GET', 'https://s3-us-west-1.amazonaws.com/', {}, '')
+      S3RazClient.return_value.get_url.assert_called_once_with(
+        action='GET', path='https://s3-us-west-1.amazonaws.com/', headers={}, data=''
+      )
       assert result == S3RazClient.return_value.get_url.return_value
