@@ -52,9 +52,10 @@ from indexer.indexers.rdbms import _get_api, run_sqoop
 from indexer.indexers.sql import _create_database, _create_table, _create_table_from_local
 from indexer.models import _save_pipeline
 from indexer.solr_client import MAX_UPLOAD_SIZE, SolrClient
+from indexer.utils import validate_local_upload_path
 from kafka.kafka_api import get_topic_data, get_topics
 from notebook.connectors.base import Notebook, get_api
-from notebook.decorators import api_error_handler
+from notebook.decorators import api_error_handler, check_document_modify_permission
 from notebook.models import MockedDjangoRequest, escape_rows
 
 LOG = logging.getLogger()
@@ -247,6 +248,11 @@ def guess_field_types(request):
 
   if file_format['inputFormat'] == 'localfile':
     path = urllib_unquote(file_format['path'])
+
+    try:
+      path = validate_local_upload_path(path, request.user.username)
+    except ValueError as e:
+      raise PopupException(_('Invalid local file path: %s') % e)
 
     with open(path, 'r') as local_file:
 
@@ -718,8 +724,9 @@ def _large_indexing(request, file_format, collection_name, query=None, start_tim
 
 @api_error_handler
 @require_POST
-# @check_document_modify_permission()
+@check_document_modify_permission()
 def save_pipeline(request):
+  """Persist importer pipeline document state; requires write access to the target document."""
   response = {'status': -1}
 
   notebook = json.loads(request.POST.get('notebook', '{}'))

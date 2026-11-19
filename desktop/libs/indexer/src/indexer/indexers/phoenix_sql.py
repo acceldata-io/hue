@@ -22,6 +22,8 @@ from urllib.parse import unquote as urllib_unquote, urlparse
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
+from desktop.lib.exceptions_renderable import PopupException
+from indexer.utils import validate_local_upload_path
 from notebook.conf import get_ordered_interpreters
 from notebook.models import make_notebook
 
@@ -70,6 +72,10 @@ CONSTRAINT my_pk PRIMARY KEY (%(primary_keys)s)
       csvfile = string_io(content)
       reader = csv.reader(csvfile)
     else:
+      try:
+        source_path = validate_local_upload_path(source_path, self.user.username)
+      except ValueError as e:
+        raise PopupException(_('Invalid local file path: %s') % e)
       local_file = open(source_path, 'r')
       reader = csv.reader(local_file)
 

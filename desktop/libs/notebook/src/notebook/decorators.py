@@ -32,7 +32,7 @@ from desktop.lib.django_util import JsonResponse
 from desktop.lib.exceptions_renderable import PopupException
 from desktop.lib.i18n import smart_str
 from desktop.lib.rest.http_client import RestException
-from desktop.models import Document, Document2, FilesystemException
+from desktop.models import Document2, FilesystemException
 from notebook.conf import check_has_missing_permission
 from notebook.connectors.base import (
   AuthenticationRequired,
@@ -43,6 +43,7 @@ from notebook.connectors.base import (
   SessionExpired,
 )
 from notebook.models import _get_editor_type
+from notebook.saved_document_auth import get_writable_document_for_update
 
 LOG = logging.getLogger()
 
@@ -96,15 +97,7 @@ def check_document_modify_permission():
   def inner(view_func):
     def decorate(request, *args, **kwargs):
       notebook = json.loads(request.POST.get('notebook', '{}'))
-
-      try:
-        if notebook.get('id'):
-          doc2 = Document2.objects.get(uuid=notebook['parentSavedQueryUuid']) if notebook.get('parentSavedQueryUuid') else \
-            Document2.objects.get(id=notebook['id'])
-          doc2.can_write_or_exception(request.user)
-      except Document.DoesNotExist:
-        raise PopupException(_('Document %(id)s does not exist') % {'id': notebook.get('id')})
-
+      get_writable_document_for_update(notebook, request.user)
       return view_func(request, *args, **kwargs)
     return wraps(view_func)(decorate)
   return inner

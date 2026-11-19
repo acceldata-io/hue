@@ -24,7 +24,8 @@ from indexer.indexers.phoenix_sql import PhoenixIndexer
 
 
 def test_create_table_phoenix():
-  with patch('indexer.indexers.phoenix_sql.get_ordered_interpreters') as get_ordered_interpreters:
+  with patch('indexer.indexers.phoenix_sql.get_ordered_interpreters') as get_ordered_interpreters, \
+       patch('indexer.indexers.phoenix_sql.validate_local_upload_path', side_effect=lambda path, username: path):
     get_ordered_interpreters.return_value = [{'Name': 'Phoenix', 'dialect': 'phoenix', 'type': 'phoenix'}]
     source = {
       'inputFormat': 'localfile',
