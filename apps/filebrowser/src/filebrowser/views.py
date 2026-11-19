@@ -1654,6 +1654,9 @@ def _upload_file(request):
     if request.fs.isdir(dest) and posixpath.sep in uploaded_file.name:
       raise PopupException(_('Sorry, no "%(sep)s" in the filename %(name)s.' % {'sep': posixpath.sep, 'name': uploaded_file.name}))
 
+    # Enforce the same allow/restrict extension rules used by rename, touch, and chunked uploads.
+    _validate_file_extension_allowed(uploaded_file.name)
+
     try:
       request.fs.upload(file=uploaded_file, path=dest, username=request.user.username)
       response['status'] = 0
