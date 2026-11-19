@@ -16,15 +16,17 @@
 # limitations under the License.
 from djangosaml2.views import AssertionConsumerServiceView, EchoAttributesView, LoginView, LogoutView, MetadataView
 
-LoginView.dispatch.login_notrequired = True
-EchoAttributesView.dispatch.login_notrequired = True
-MetadataView.dispatch.login_notrequired = True
-LogoutView.dispatch.login_notrequired = True
-AssertionConsumerServiceView.dispatch.login_notrequired = True
+# Hue middleware checks view_func.login_notrequired. Django as_view() copies
+# attributes from dispatch onto the view function. Set the flag on both the
+# class and dispatch so SAML login/ACS/logout stay reachable without a session.
+for _view_cls in (LoginView, EchoAttributesView, MetadataView, LogoutView, AssertionConsumerServiceView):
+  _view_cls.login_notrequired = True
+  _view_cls.dispatch.login_notrequired = True
 
 try:
   from djangosaml2.views import LogoutServicePostView
 
+  LogoutServicePostView.login_notrequired = True
   LogoutServicePostView.dispatch.login_notrequired = True
 except ImportError:
   # We are on an older version of djangosaml2

@@ -54,7 +54,7 @@ def require_configuration_admin(user):
   :raises PopupException: When ``user`` is not a Hue admin.
   """
   if not is_admin(user):
-    raise PopupException(_("You must be an admin."), error_code=401)
+    raise PopupException(_("You must be an admin."), error_code=403)
 
 
 def resolve_target_user(request, user_id):

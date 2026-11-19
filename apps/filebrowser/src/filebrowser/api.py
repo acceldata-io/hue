@@ -53,7 +53,7 @@ from filebrowser.conf import (
   SHOW_DOWNLOAD_BUTTON,
 )
 from filebrowser.lib.rwx import compress_mode, filetype, rwx
-from filebrowser.utils import parse_broker_url
+from filebrowser.utils import is_file_upload_allowed, parse_broker_url
 from filebrowser.views import (
   DEFAULT_CHUNK_SIZE_BYTES,
   MAX_CHUNK_SIZE_BYTES,
@@ -525,10 +525,10 @@ def upload_file(request):
   dest_path = request.POST.get('destination_path')
   overwrite = coerce_bool(request.POST.get('overwrite', False))
 
-  # Check if the file type is restricted
-  _, file_type = os.path.splitext(uploaded_file.name)
-  if RESTRICT_FILE_EXTENSIONS.get() and file_type.lower() in [ext.lower() for ext in RESTRICT_FILE_EXTENSIONS.get()]:
-    return HttpResponse(f'Uploading files with type "{file_type}" is not allowed. Hue is configured to restrict this type.', status=400)
+  # Enforce allow/restrict file extension rules (same helper as rename/touch/chunked uploads).
+  is_allowed, error_message = is_file_upload_allowed(uploaded_file.name)
+  if not is_allowed:
+    return HttpResponse(error_message, status=400)
 
   # Check if the file size exceeds the maximum allowed size
   max_size = MAX_FILE_SIZE_UPLOAD_LIMIT.get()
