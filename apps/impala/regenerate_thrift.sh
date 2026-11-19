@@ -20,5 +20,5 @@ set -o xtrace
 
 cd $(dirname $0)
 
-thrift -I thrift/include -r --gen py:new_style -o ./ thrift/ImpalaService.thrift
+thrift -I thrift/include -r --gen py -o ./ thrift/ImpalaService.thrift
 
