@@ -215,6 +215,14 @@ REDIRECT_URL = Config(
   default="",
   help=_t("After log users out of control plane, CDP control plane redirect to this URL"))
 
+# Off unless configured. Turning this on changes SAML logout so Hue drops its own
+# session and does not send a logout request to the identity provider.
+LOCAL_LOGOUT = Config(
+  key="local_logout",
+  type=coerce_bool,
+  default=False,
+  help=_t("Local logout only logs the user out of Hue, not the SAML identity provider."))
+
 
 def get_key_file_password():
   password = os.environ.get('HUE_SAML_KEY_FILE_PASSWORD')

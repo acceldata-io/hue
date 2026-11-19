@@ -2261,6 +2261,10 @@
   # after log users out of magic-sso, CDP control panel use redirect URL
   ## redirect_url=
 
+  # Local logout only logs the user out of Hue, not the SAML identity provider.
+  # Leave this off unless local logout is required. It is off by default.
+  ## local_logout=false
+
 ###########################################################################
 # Settings to configure OAuth
 ###########################################################################
