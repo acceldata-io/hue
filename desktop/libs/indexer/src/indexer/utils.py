@@ -47,6 +47,32 @@ DEFAULT_FIELD = {
 }
 
 
+def validate_local_upload_path(path, username):
+  """
+  Ensure path is a file created by the importer upload for this user.
+
+  The resolved path must stay inside the system temp directory, must be a
+  regular file, and the filename must start with "{username}_".
+  """
+  if not username:
+    raise ValueError('Username is required.')
+
+  real_path = os.path.realpath(os.path.abspath(path))
+  tmp_dir = os.path.realpath(tempfile.gettempdir())
+
+  if not real_path.startswith(tmp_dir + os.sep):
+    raise ValueError('File path is not within the expected upload directory.')
+
+  if not os.path.isfile(real_path):
+    raise ValueError('Uploaded file not found.')
+
+  filename = os.path.basename(real_path)
+  if not filename.startswith(username + '_'):
+    raise ValueError('File was not uploaded by the current user.')
+
+  return real_path
+
+
 def get_config_template_path(solr_cloud_mode):
   if solr_cloud_mode:
     return os.path.join(conf.CONFIG_TEMPLATE_PATH.get(), 'solrcloud')

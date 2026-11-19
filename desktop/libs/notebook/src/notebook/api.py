@@ -39,6 +39,7 @@ from notebook.conf import EXAMPLES
 from notebook.connectors.base import Notebook, QueryError, QueryExpired, SessionExpired, _get_snippet_name, patch_snippet_for_connector
 from notebook.decorators import api_error_handler, check_document_access_permission, check_document_modify_permission
 from notebook.models import _get_dialect_example, escape_rows, get_api, make_notebook, upgrade_session_properties
+from notebook.saved_document_auth import get_writable_document_for_update
 
 LOG = logging.getLogger()
 
@@ -504,11 +505,8 @@ def _save_notebook(notebook, user):
 
   save_as = False
 
-  if notebook.get('parentSavedQueryUuid'):  # We save into the original saved query, not into the query history
-    notebook_doc = Document2.objects.get_by_uuid(user=user, uuid=notebook['parentSavedQueryUuid'])
-  elif notebook.get('id'):
-    notebook_doc = Document2.objects.get(id=notebook['id'])
-  else:
+  notebook_doc = get_writable_document_for_update(notebook, user)
+  if notebook_doc is None:
     notebook_doc = Document2.objects.create(name=notebook['name'], uuid=notebook['uuid'], type=notebook_type, owner=user)
     Document.objects.link(
         notebook_doc, owner=notebook_doc.owner, name=notebook_doc.name, description=notebook_doc.description, extra=notebook_type
