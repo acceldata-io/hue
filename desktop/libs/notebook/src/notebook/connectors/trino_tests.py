@@ -30,6 +30,14 @@ from notebook.connectors.trino import TrinoApi
 from useradmin.models import User
 
 
+def _rows(rows):
+  """Trino result stand-in that yields every row when iterated."""
+  result = MagicMock()
+  result.__iter__.return_value = iter(rows)
+  result.rows = rows
+  return result
+
+
 class TestTrinoApi(TestCase):
 
   @classmethod
@@ -131,7 +139,7 @@ class TestTrinoApi(TestCase):
     with patch('notebook.connectors.trino.TrinoQuery') as TrinoQuery:
       # Mock TrinoQuery object and its execute method
       query_instance = TrinoQuery.return_value
-      query_instance.result.rows = [['value1', 'value2'], ['value3', 'value4']]
+      query_instance.execute.return_value = _rows([['value1', 'value2'], ['value3', 'value4']])
       query_instance.columns = [
         {'name': 'test_column1', 'type': 'string', 'comment': ''}, {'name': 'test_column2', 'type': 'string', 'comment': ''}
       ]
@@ -404,7 +412,7 @@ class TestTrinoApi(TestCase):
       'comment := tpch:comment\n           suppkey := tpch:suppkey\n\n']]
       # Mock TrinoQuery object and its execute method
       query_instance = TrinoQuery.return_value
-      query_instance.execute.return_value = MagicMock(next_uri=None, id='123', rows=output, columns=[])
+      query_instance.execute.return_value = _rows(output)
 
       # Call the explain method
       result = self.trino_api.explain(notebook=None, snippet=snippet)
@@ -492,7 +500,7 @@ class TestTrinoApi(TestCase):
           ]
           query_instance = TrinoQuery.return_value
           query_instance.execute.side_effect = [
-            MagicMock(rows=[["schema1"], ["schema2"]]),  # First catalog response
+            _rows([["schema1"], ["schema2"]]),  # First catalog response
             Exception("Some error")  # Second catalog raises an exception
           ]
           result = self.trino_api._show_databases()
