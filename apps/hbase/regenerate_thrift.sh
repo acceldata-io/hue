@@ -16,4 +16,4 @@
 # limitations under the License.
 cd $(dirname $0)
 
-thrift --gen py:new_style thrift/Hbase.thrift
+thrift --gen py thrift/Hbase.thrift
